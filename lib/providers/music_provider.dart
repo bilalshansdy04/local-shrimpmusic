@@ -88,13 +88,60 @@ class MusicNotifier extends Notifier<MusicState> {
     }
     
     if (hasPermission) {
-      final songs = await _audioQuery.querySongs(
-        sortType: null,
-        orderType: OrderType.ASC_OR_SMALLER,
-        uriType: UriType.EXTERNAL,
-        ignoreCase: true,
-        path: customPath,
-      );
+      List<SongModel> songs = [];
+      
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        // Fallback for Desktop platforms since on_audio_query doesnt support them natively
+        final targetPath = customPath ?? (Platform.environment['USERPROFILE'] != null ? "${Platform.environment['USERPROFILE']}\\Music" : "");
+        if (targetPath.isNotEmpty) {
+          final dir = Directory(targetPath);
+          if (await dir.exists()) {
+            final List<FileSystemEntity> entities = [];
+            try {
+              await for (var entity in dir.list(recursive: true)) {
+                entities.add(entity);
+              }
+            } catch (e) {
+              print("Error scanning directory: $e");
+            }
+            for (var entity in entities) {
+              if (entity is File) {
+                final ext = entity.path.toLowerCase();
+                if (ext.endsWith('.mp3') || ext.endsWith('.flac') || ext.endsWith('.wav') || ext.endsWith('.m4a')) {
+                  final filename = entity.uri.pathSegments.last;
+                  final title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+                  
+                  // Construct a basic SongModel
+                  songs.add(SongModel({
+                    '_id': entity.path.hashCode,
+                    '_data': entity.path,
+                    '_uri': entity.uri.toString(),
+                    '_display_name': filename,
+                    '_display_name_wo_ext': title,
+                    '_size': entity.lengthSync(),
+                    'album': 'Unknown Album',
+                    'album_id': 0,
+                    'artist': 'Unknown Artist',
+                    'artist_id': 0,
+                    'title': title,
+                    'duration': 0,
+                  }));
+                }
+              }
+            }
+          }
+        }
+      } else {
+        songs = await _audioQuery.querySongs(
+          sortType: null,
+          orderType: OrderType.ASC_OR_SMALLER,
+          uriType: UriType.EXTERNAL,
+          ignoreCase: true,
+          path: customPath,
+        );
+      }
+      
+      print("Total songs loaded: ${songs.length}");
       state = state.copyWith(allSongs: songs, hasPermission: true, isLoading: false);
     } else {
       state = state.copyWith(hasPermission: false, isLoading: false);
