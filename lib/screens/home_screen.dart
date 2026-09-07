@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -21,11 +21,37 @@ class HomeScreen extends ConsumerWidget {
                 style: TextStyle(color: Color(0xFF111827)),
               ),
             )
-          : musicState.allSongs.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFFF4500)),
-            )
-          : SingleChildScrollView(
+          : musicState.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFFF4500)),
+                )
+              : musicState.allSongs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            musicState.musicFolderPath != null 
+                                ? "No songs found in "
+                                : "No local songs found in your default Music folder.",
+                            style: const TextStyle(color: Color(0xFF111827), fontSize: 16),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => ref.read(musicProvider.notifier).pickMusicFolder(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF4500),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            icon: const Icon(Icons.folder_open),
+                            label: const Text("Select Music Folder"),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
               padding: const EdgeInsets.only(
                 left: 24.0,
                 right: 24.0,
@@ -146,3 +172,4 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
+

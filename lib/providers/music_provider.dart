@@ -1,6 +1,9 @@
-﻿import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
+import "dart:io";
+import "package:shared_preferences/shared_preferences.dart";
+import "package:file_picker/file_picker.dart";
 
 class MusicState {
   final List<SongModel> allSongs;
@@ -9,6 +12,8 @@ class MusicState {
   final Duration position;
   final Duration duration;
   final bool hasPermission;
+  final bool isLoading;
+  final String? musicFolderPath;
 
   MusicState({
     this.allSongs = const [],
@@ -17,6 +22,8 @@ class MusicState {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.hasPermission = false,
+    this.isLoading = true,
+    this.musicFolderPath,
   });
 
   MusicState copyWith({
@@ -26,6 +33,8 @@ class MusicState {
     Duration? position,
     Duration? duration,
     bool? hasPermission,
+    bool? isLoading,
+    String? musicFolderPath,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -34,6 +43,8 @@ class MusicState {
       position: position ?? this.position,
       duration: duration ?? this.duration,
       hasPermission: hasPermission ?? this.hasPermission,
+      isLoading: isLoading ?? this.isLoading,
+      musicFolderPath: musicFolderPath ?? this.musicFolderPath,
     );
   }
 }
@@ -64,9 +75,16 @@ class MusicNotifier extends Notifier<MusicState> {
   }
 
   Future<void> _init() async {
-    bool hasPermission = await _audioQuery.permissionsStatus();
-    if (!hasPermission) {
-      hasPermission = await _audioQuery.permissionsRequest();
+    final prefs = await SharedPreferences.getInstance();
+    final customPath = prefs.getString('custom_music_path');
+    state = state.copyWith(musicFolderPath: customPath);
+
+    bool hasPermission = true;
+    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
+      hasPermission = await _audioQuery.permissionsStatus();
+      if (!hasPermission) {
+        hasPermission = await _audioQuery.permissionsRequest();
+      }
     }
     
     if (hasPermission) {
@@ -75,10 +93,29 @@ class MusicNotifier extends Notifier<MusicState> {
         orderType: OrderType.ASC_OR_SMALLER,
         uriType: UriType.EXTERNAL,
         ignoreCase: true,
+        path: customPath,
       );
-      state = state.copyWith(allSongs: songs, hasPermission: true);
+      state = state.copyWith(allSongs: songs, hasPermission: true, isLoading: false);
     } else {
-      state = state.copyWith(hasPermission: false);
+      state = state.copyWith(hasPermission: false, isLoading: false);
+    }
+  }
+
+  Future<void> pickMusicFolder() async {
+    final result = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Select Music Folder',
+    );
+    
+    if (result != null) {
+      state = state.copyWith(isLoading: true);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('custom_music_path', result);
+      
+      // Stop current playback to avoid errors if the folder changes
+      await _player.stop();
+      
+      // Re-initialize to rescan the new folder
+      await _init();
     }
   }
 
@@ -120,4 +157,7 @@ class MusicNotifier extends Notifier<MusicState> {
 final musicProvider = NotifierProvider<MusicNotifier, MusicState>(() {
   return MusicNotifier();
 });
+
+
+
 
