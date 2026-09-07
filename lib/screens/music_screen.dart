@@ -99,7 +99,7 @@ class MusicScreen extends ConsumerWidget {
                           if (bytes != null) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(32),
-                              child: Image.memory(bytes, fit: BoxFit.cover),
+                              child: RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, cacheWidth: 800)),
                             );
                           }
                           return _buildFallbackArtwork();

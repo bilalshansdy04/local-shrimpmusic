@@ -129,7 +129,7 @@ class HomeScreen extends ConsumerWidget {
                                       return artworkAsync.when(
                                         data: (bytes) {
                                           if (bytes != null) {
-                                            return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
+                                            return RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity, cacheWidth: 300));
                                           }
                                           return const Center(child: Icon(Icons.music_note, color: Colors.white, size: 48));
                                         },

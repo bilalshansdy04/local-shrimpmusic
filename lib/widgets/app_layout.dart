@@ -501,7 +501,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                             if (bytes != null) {
                               return ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.memory(bytes, fit: BoxFit.cover),
+                                child: RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, cacheWidth: 200)),
                               );
                             }
                             return const Icon(Icons.music_note, color: Colors.white);

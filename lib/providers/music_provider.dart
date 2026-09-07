@@ -2,16 +2,39 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
 import "dart:io";
+import "dart:convert";
+import "dart:isolate";
+import "package:path_provider/path_provider.dart";
 import "dart:typed_data";
 import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:file_picker/file_picker.dart";
 
-final artworkProvider = FutureProvider.family<Uint8List?, String>((ref, filePath) async {
+final artworkProvider = FutureProvider.family<File?, String>((ref, filePath) async {
   try {
-    final metadata = readMetadata(File(filePath), getImage: true);
-    if (metadata.pictures.isNotEmpty) {
-      return metadata.pictures.first.bytes;
+    final tempDir = await getTemporaryDirectory();
+    final cacheFile = File('${tempDir.path}/art_${filePath.hashCode}.jpg');
+    
+    if (cacheFile.existsSync()) {
+      return cacheFile;
+    }
+    
+    // Extract in isolate
+    final bytes = await Isolate.run(() {
+      try {
+        final metadata = readMetadata(File(filePath), getImage: true);
+        if (metadata.pictures.isNotEmpty) {
+          return metadata.pictures.first.bytes;
+        }
+      } catch (e) {
+        // ignore
+      }
+      return null;
+    });
+    
+    if (bytes != null) {
+      await cacheFile.writeAsBytes(bytes);
+      return cacheFile;
     }
   } catch (e) {
     // ignore
@@ -111,51 +134,61 @@ class MusicNotifier extends Notifier<MusicState> {
         if (targetPath.isNotEmpty) {
           final dir = Directory(targetPath);
           if (await dir.exists()) {
-            final List<FileSystemEntity> entities = [];
+            final filePaths = <String>[];
             try {
               await for (var entity in dir.list(recursive: true)) {
-                entities.add(entity);
+                if (entity is File) {
+                  final ext = entity.path.toLowerCase();
+                  if (ext.endsWith('.mp3') || ext.endsWith('.flac') || ext.endsWith('.wav') || ext.endsWith('.m4a') || ext.endsWith('.ogg')) {
+                    filePaths.add(entity.path);
+                  }
+                }
               }
             } catch (e) {
               print("Error scanning directory: $e");
             }
-            for (var entity in entities) {
-              if (entity is File) {
-                final ext = entity.path.toLowerCase();
-                if (ext.endsWith('.mp3') || ext.endsWith('.flac') || ext.endsWith('.wav') || ext.endsWith('.m4a')) {
-                  final filename = entity.uri.pathSegments.last;
-                  String title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
-                  String artist = 'Unknown Artist';
-                  String album = 'Unknown Album';
-                  int durationMs = 0;
-                  
-                  try {
-                    final metadata = readMetadata(entity, getImage: false);
-                    if (metadata.title != null && metadata.title!.isNotEmpty) title = metadata.title!;
-                    if (metadata.artist != null && metadata.artist!.isNotEmpty) artist = metadata.artist!;
-                    if (metadata.album != null && metadata.album!.isNotEmpty) album = metadata.album!;
-                    if (metadata.duration != null) durationMs = metadata.duration!.inMilliseconds;
-                  } catch (e) {
-                    // ignore
-                  }
-                  
-                  // Construct a basic SongModel
-                  songs.add(SongModel({
-                    '_id': entity.path.hashCode,
-                    '_data': entity.path,
-                    '_uri': entity.uri.toString(),
-                    '_display_name': filename,
-                    '_display_name_wo_ext': title,
-                    '_size': entity.lengthSync(),
-                    'album': album,
-                    'album_id': 0,
-                    'artist': artist,
-                    'artist_id': 0,
-                    'title': title,
-                    'duration': durationMs,
-                  }));
+            
+            // Offload metadata parsing to an isolate so it doesn't block UI thread
+            final songMaps = await Isolate.run(() {
+              final results = <Map<String, dynamic>>[];
+              for (var path in filePaths) {
+                final file = File(path);
+                final filename = file.uri.pathSegments.last;
+                String title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+                String artist = 'Unknown Artist';
+                String album = 'Unknown Album';
+                int durationMs = 0;
+                
+                try {
+                  final metadata = readMetadata(file, getImage: false);
+                  if (metadata.title != null && metadata.title!.isNotEmpty) title = metadata.title!;
+                  if (metadata.artist != null && metadata.artist!.isNotEmpty) artist = metadata.artist!;
+                  if (metadata.album != null && metadata.album!.isNotEmpty) album = metadata.album!;
+                  if (metadata.duration != null) durationMs = metadata.duration!.inMilliseconds;
+                } catch (e) {
+                  // ignore
                 }
+                
+                results.add({
+                  '_id': path.hashCode,
+                  '_data': path,
+                  '_uri': file.uri.toString(),
+                  '_display_name': filename,
+                  '_display_name_wo_ext': title,
+                  '_size': file.lengthSync(),
+                  'album': album,
+                  'album_id': 0,
+                  'artist': artist,
+                  'artist_id': 0,
+                  'title': title,
+                  'duration': durationMs,
+                });
               }
+              return results;
+            });
+            
+            for (var map in songMaps) {
+              songs.add(SongModel(map));
             }
           }
         }

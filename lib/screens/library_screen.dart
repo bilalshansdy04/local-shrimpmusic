@@ -43,7 +43,7 @@ class LibraryScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                       child: Row(
                         children: [
-                          Text("", style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                          Text("\${index + 1}", style: const TextStyle(color: Colors.grey, fontSize: 14)),
                           const SizedBox(width: 16),
                           Container(
                             width: 40,
@@ -52,7 +52,24 @@ class LibraryScreen extends ConsumerWidget {
                               color: Colors.grey[300],
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.music_note, color: Colors.grey),
+                            child: Consumer(
+                              builder: (context, ref, child) {
+                                final artworkAsync = ref.watch(artworkProvider(song.data));
+                                return artworkAsync.when(
+                                  data: (bytes) {
+                                    if (bytes != null) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, cacheWidth: 100)),
+                                      );
+                                    }
+                                    return const Icon(Icons.music_note, color: Colors.grey);
+                                  },
+                                  loading: () => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                                  error: (_, __) => const Icon(Icons.music_note, color: Colors.grey),
+                                );
+                              },
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
