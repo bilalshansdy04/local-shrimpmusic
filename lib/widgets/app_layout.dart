@@ -8,6 +8,7 @@ import "../screens/favorite_songs_screen.dart";
 import "../screens/search_screen.dart";
 import "../screens/library_screen.dart";
 import "../screens/playlists_screen.dart";
+import "../screens/settings_screen.dart";
 import "../providers/music_provider.dart";
 import "../providers/ui_provider.dart";
 
@@ -29,6 +30,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     const LibraryScreen(),
     const FavoriteSongsScreen(),
     const PlaylistsScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -163,13 +165,15 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           _sidebarItem(Icons.queue_music_rounded, 4),
           const Spacer(),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.settings_outlined,
-              color: Color(0xFFFF4500),
+              color: _selectedIndex == 5 ? const Color(0xFFFF4500) : Colors.black,
               size: 28,
             ),
             onPressed: () {
-              ref.read(musicProvider.notifier).pickMusicFolder();
+              setState(() {
+                _selectedIndex = 5;
+              });
             },
           ),
           const SizedBox(height: 32),
