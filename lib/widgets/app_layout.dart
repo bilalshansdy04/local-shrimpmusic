@@ -162,10 +162,15 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           const SizedBox(height: 16),
           _sidebarItem(Icons.queue_music_rounded, 4),
           const Spacer(),
-          const Icon(
-            Icons.settings_outlined,
-            color: Color(0xFFFF4500),
-            size: 28,
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: Color(0xFFFF4500),
+              size: 28,
+            ),
+            onPressed: () {
+              ref.read(musicProvider.notifier).pickMusicFolder();
+            },
           ),
           const SizedBox(height: 32),
         ],
@@ -420,7 +425,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFDC5028).withOpacity(0.08),
+              color: const Color(0xFFDC5028).withValues(alpha: 0.08),
               blurRadius: 35,
               offset: const Offset(0, 12),
               spreadRadius: -4,
@@ -586,7 +591,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       ),
                       const SizedBox(width: 16),
                       _buildIconWithDot(
-                        icon: _repeatMode == 2 ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                        icon: _repeatMode == 2
+                            ? Icons.repeat_one_rounded
+                            : Icons.repeat_rounded,
                         isActive: _repeatMode > 0,
                         size: 28,
                         onTap: () {
@@ -608,7 +615,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                         isActive: viewMode == PlayerViewMode.lyric,
                         size: 24,
                         onTap: () {
-                          final notifier = ref.read(playerViewModeProvider.notifier);
+                          final notifier = ref.read(
+                            playerViewModeProvider.notifier,
+                          );
                           notifier.setMode(
                             viewMode == PlayerViewMode.lyric
                                 ? PlayerViewMode.normal
@@ -642,7 +651,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                         isActive: viewMode == PlayerViewMode.queue,
                         size: 26,
                         onTap: () {
-                          final notifier = ref.read(playerViewModeProvider.notifier);
+                          final notifier = ref.read(
+                            playerViewModeProvider.notifier,
+                          );
                           notifier.setMode(
                             viewMode == PlayerViewMode.queue
                                 ? PlayerViewMode.normal
@@ -667,7 +678,3 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 }
-
-
-
-
