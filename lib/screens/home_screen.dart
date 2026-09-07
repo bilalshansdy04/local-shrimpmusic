@@ -123,17 +123,20 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
-                                  child: QueryArtworkWidget(
-                                    id: song.id,
-                                    type: ArtworkType.AUDIO,
-                                    artworkFit: BoxFit.cover,
-                                    nullArtworkWidget: const Center(
-                                      child: Icon(
-                                        Icons.music_note,
-                                        color: Colors.white,
-                                        size: 48,
-                                      ),
-                                    ),
+                                  child: Consumer(
+                                    builder: (context, ref, child) {
+                                      final artworkAsync = ref.watch(artworkProvider(song.data));
+                                      return artworkAsync.when(
+                                        data: (bytes) {
+                                          if (bytes != null) {
+                                            return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
+                                          }
+                                          return const Center(child: Icon(Icons.music_note, color: Colors.white, size: 48));
+                                        },
+                                        loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                                        error: (_, __) => const Center(child: Icon(Icons.music_note, color: Colors.white, size: 48)),
+                                      );
+                                    },
                                   ),
                                 ),
                               ),

@@ -2,11 +2,25 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
 import "dart:io";
+import "dart:typed_data";
 import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:file_picker/file_picker.dart";
 
+final artworkProvider = FutureProvider.family<Uint8List?, String>((ref, filePath) async {
+  try {
+    final metadata = readMetadata(File(filePath), getImage: true);
+    if (metadata.pictures.isNotEmpty) {
+      return metadata.pictures.first.bytes;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return null;
+});
+
 class MusicState {
+
   final List<SongModel> allSongs;
   final SongModel? currentSong;
   final bool isPlaying;

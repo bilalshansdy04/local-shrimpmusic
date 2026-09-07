@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -91,28 +91,23 @@ class MusicScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  child: QueryArtworkWidget(
-                    id: state.currentSong!.id,
-                    type: ArtworkType.AUDIO,
-                    nullArtworkWidget: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFCA5A5), Color(0xFFFECDD3)],
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                        ),
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.music_note,
-                          color: Colors.white,
-                          size: 100,
-                        ),
-                      ),
-                    ),
-                    artworkBorder: BorderRadius.circular(32),
-                    artworkFit: BoxFit.cover,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final artworkAsync = ref.watch(artworkProvider(state.currentSong!.data));
+                      return artworkAsync.when(
+                        data: (bytes) {
+                          if (bytes != null) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: Image.memory(bytes, fit: BoxFit.cover),
+                            );
+                          }
+                          return _buildFallbackArtwork();
+                        },
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (_, __) => _buildFallbackArtwork(),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -407,4 +402,24 @@ class MusicScreen extends ConsumerWidget {
       ],
     );
   }
+  Widget _buildFallbackArtwork() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFCA5A5), Color(0xFFFECDD3)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(32),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.music_note_rounded,
+          size: 120,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
 }

@@ -486,21 +486,31 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             Row(
               children: [
                 if (displaySong != null)
-                  QueryArtworkWidget(
-                    id: displaySong.id,
-                    type: ArtworkType.AUDIO,
-                    nullArtworkWidget: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3C2C2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.music_note, color: Colors.white),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3C2C2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    artworkBorder: BorderRadius.circular(12),
-                    artworkWidth: 56,
-                    artworkHeight: 56,
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final artworkAsync = ref.watch(artworkProvider(displaySong.data));
+                        return artworkAsync.when(
+                          data: (bytes) {
+                            if (bytes != null) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.memory(bytes, fit: BoxFit.cover),
+                              );
+                            }
+                            return const Icon(Icons.music_note, color: Colors.white);
+                          },
+                          loading: () => const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
+                          error: (_, __) => const Icon(Icons.music_note, color: Colors.white),
+                        );
+                      },
+                    ),
                   )
                 else
                   Container(
