@@ -1,25 +1,115 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
+import "package:flutter_riverpod/flutter_riverpod.dart";
+import "../providers/music_provider.dart";
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final musicState = ref.watch(musicProvider);
+    final songs = musicState.allSongs;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.library_music_rounded, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text("Your Library", style: TextStyle(color: Colors.grey[800], fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text("Albums, Artists, and more will appear here.", style: TextStyle(color: Colors.grey[500], fontSize: 14)),
-          ],
-        ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 32.0, right: 32.0, top: 48.0, bottom: 24.0),
+              child: Text(
+                "Library",
+                style: const TextStyle(
+                  color: Color(0xFF111827),
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final song = songs[index];
+                  return InkWell(
+                    onTap: () {
+                      ref.read(musicProvider.notifier).playSong(song);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      child: Row(
+                        children: [
+                          Text("", style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                          const SizedBox(width: 16),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.music_note, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  song.title,
+                                  style: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold, fontSize: 16),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  song.artist ?? "Unknown Artist",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 4,
+                            child: Text(
+                              song.album ?? "Unknown Album",
+                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "\:",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(Icons.more_horiz_rounded, color: Colors.grey[600], size: 20),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                childCount: songs.length,
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 180)),
+        ],
       ),
     );
   }
 }
-
