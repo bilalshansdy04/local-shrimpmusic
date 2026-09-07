@@ -2,6 +2,7 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
 import "dart:io";
+import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:file_picker/file_picker.dart";
 
@@ -109,7 +110,20 @@ class MusicNotifier extends Notifier<MusicState> {
                 final ext = entity.path.toLowerCase();
                 if (ext.endsWith('.mp3') || ext.endsWith('.flac') || ext.endsWith('.wav') || ext.endsWith('.m4a')) {
                   final filename = entity.uri.pathSegments.last;
-                  final title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+                  String title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+                  String artist = 'Unknown Artist';
+                  String album = 'Unknown Album';
+                  int durationMs = 0;
+                  
+                  try {
+                    final metadata = readMetadata(entity, getImage: false);
+                    if (metadata.title != null && metadata.title!.isNotEmpty) title = metadata.title!;
+                    if (metadata.artist != null && metadata.artist!.isNotEmpty) artist = metadata.artist!;
+                    if (metadata.album != null && metadata.album!.isNotEmpty) album = metadata.album!;
+                    if (metadata.duration != null) durationMs = metadata.duration!.inMilliseconds;
+                  } catch (e) {
+                    // ignore
+                  }
                   
                   // Construct a basic SongModel
                   songs.add(SongModel({
@@ -119,12 +133,12 @@ class MusicNotifier extends Notifier<MusicState> {
                     '_display_name': filename,
                     '_display_name_wo_ext': title,
                     '_size': entity.lengthSync(),
-                    'album': 'Unknown Album',
+                    'album': album,
                     'album_id': 0,
-                    'artist': 'Unknown Artist',
+                    'artist': artist,
                     'artist_id': 0,
                     'title': title,
-                    'duration': 0,
+                    'duration': durationMs,
                   }));
                 }
               }
