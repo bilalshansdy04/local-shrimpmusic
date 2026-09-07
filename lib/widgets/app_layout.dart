@@ -167,7 +167,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
-              color: _selectedIndex == 5 ? const Color(0xFFFF4500) : Colors.black,
+              color: _selectedIndex == 5 ? const Color(0xFFFF4500) : Colors.grey.shade500,
               size: 28,
             ),
             onPressed: () {
