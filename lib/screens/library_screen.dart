@@ -43,7 +43,7 @@ class LibraryScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                       child: Row(
                         children: [
-                          Text("\${index + 1}", style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                          Text("${index + 1}", style: const TextStyle(color: Colors.grey, fontSize: 14)),
                           const SizedBox(width: 16),
                           Container(
                             width: 40,
@@ -107,7 +107,7 @@ class LibraryScreen extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Text(
-                                  "\:",
+                                  "${(song.duration ?? 0) ~/ 60000}:${(((song.duration ?? 0) % 60000) ~/ 1000).toString().padLeft(2, '0')}",
                                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                                 ),
                                 const SizedBox(width: 16),
