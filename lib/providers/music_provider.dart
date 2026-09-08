@@ -2,6 +2,7 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
 
+import "dart:convert";
 import "dart:io";
 import "dart:isolate";
 
@@ -70,6 +71,7 @@ class MusicState {
   final bool isLoading;
   final String? musicFolderPath;
   final int? currentBitrate;
+  final List<SongModel> recentlyPlayed;
 
   MusicState({
     this.allSongs = const [],
@@ -86,6 +88,7 @@ class MusicState {
     this.isLoading = true,
     this.musicFolderPath,
     this.currentBitrate,
+    this.recentlyPlayed = const [],
   });
 
   MusicState copyWith({
@@ -103,6 +106,7 @@ class MusicState {
     bool? isLoading,
     String? musicFolderPath,
     int? currentBitrate,
+    List<SongModel>? recentlyPlayed,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -119,6 +123,7 @@ class MusicState {
       isLoading: isLoading ?? this.isLoading,
       musicFolderPath: musicFolderPath ?? this.musicFolderPath,
       currentBitrate: currentBitrate ?? this.currentBitrate,
+      recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
     );
   }
 }
@@ -251,6 +256,7 @@ class MusicNotifier extends Notifier<MusicState> {
                   'artist_id': 0,
                   'title': title,
                   'duration': durationMs,
+                  'date_added': file.lastModifiedSync().millisecondsSinceEpoch ~/ 1000,
                 });
               }
               return results;
@@ -297,6 +303,22 @@ class MusicNotifier extends Notifier<MusicState> {
   }
 
   Future<void> playSong(SongModel song, {List<SongModel>? contextList}) async {
+    // Update recently played
+    List<SongModel> newRecentlyPlayed = List.from(state.recentlyPlayed);
+    newRecentlyPlayed.removeWhere((s) => s.id == song.id);
+    newRecentlyPlayed.insert(0, song);
+    if (newRecentlyPlayed.length > 15) {
+      newRecentlyPlayed = newRecentlyPlayed.sublist(0, 15);
+    }
+    
+    // Save to SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      final ids = newRecentlyPlayed.map((s) => s.id.toString()).toList();
+      prefs.setString('recently_played_ids', jsonEncode(ids));
+    });
+
+    state = state.copyWith(recentlyPlayed: newRecentlyPlayed);
+
     List<SongModel> newQueue = state.queue;
     int newIndex = state.queueIndex;
 

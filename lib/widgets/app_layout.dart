@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -64,7 +64,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             child: Row(
               children: [
                 if (isDesktop)
-                  const SizedBox(width: 120), // 80 width + 24 left + 16 right
+                  const SizedBox(width: 104), // 80 width + 24 left
 
                 Expanded(
                   child: Padding(
@@ -79,9 +79,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
-                    width: viewMode == PlayerViewMode.closed
-                        ? (64 + 24)
-                        : (320 + 24),
+                  width: viewMode == PlayerViewMode.closed
+                      ? 88 // 64 (right pane closed width) + 24 (right spacing)
+                      : 364, // 340 (right pane open width) + 24 (right spacing)
                   ),
               ],
             ),
@@ -645,37 +645,37 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         // Tabs
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF4500),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  "Playing Next",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              const Text(
-                "History",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
+          // child: Row(
+          //   children: [
+          //     Container(
+          //       padding: const EdgeInsets.symmetric(
+          //         horizontal: 16,
+          //         vertical: 8,
+          //       ),
+          //       decoration: BoxDecoration(
+          //         color: const Color(0xFFFF4500),
+          //         borderRadius: BorderRadius.circular(8),
+          //       ),
+          //       child: const Text(
+          //         "Playing Next",
+          //         style: TextStyle(
+          //           color: Colors.white,
+          //           fontWeight: FontWeight.bold,
+          //           fontSize: 16,
+          //         ),
+          //       ),
+          //     ),
+          //     const SizedBox(width: 24),
+          //     const Text(
+          //       "History",
+          //       style: TextStyle(
+          //         color: Colors.black,
+          //         fontWeight: FontWeight.bold,
+          //         fontSize: 16,
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ),
         const SizedBox(height: 24),
         Padding(
@@ -691,14 +691,14 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                   fontSize: 14,
                 ),
               ),
-              Text(
-                "Clear",
-                style: TextStyle(
-                  color: Colors.grey[800],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              // Text(
+              //   "Clear",
+              //   style: TextStyle(
+              //     color: Colors.grey[800],
+              //     fontWeight: FontWeight.bold,
+              //     fontSize: 14,
+              //   ),
+              // ),
             ],
           ),
         ),

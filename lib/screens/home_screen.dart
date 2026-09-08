@@ -60,148 +60,164 @@ class HomeScreen extends ConsumerWidget {
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
                 top: 48.0,
                 bottom: 180.0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Home",
-                    style: TextStyle(
-                      color: Color(0xFF111827),
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      "Home",
+                      style: TextStyle(
+                        color: Color(0xFF111827),
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Recent Played",
-                    style: TextStyle(
-                      color: Color(0xFF374151),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // Grid of Songs
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          childAspectRatio: 0.75,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 24,
-                        ),
-                    itemCount: musicState.allSongs.length,
-                    itemBuilder: (context, index) {
-                      final song = musicState.allSongs[index];
-                      return InkWell(
-                        onTap: () {
-                          ref.read(musicProvider.notifier).playSong(song, contextList: musicState.allSongs);
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3C2C2),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Consumer(
-                                    builder: (context, ref, child) {
-                                      final artworkAsync = ref.watch(
-                                        artworkProvider(song.data),
-                                      );
-                                      return artworkAsync.when(
-                                        data: (bytes) {
-                                          if (bytes != null) {
-                                            return RepaintBoundary(
-                                              child: Image.file(
-                                                bytes,
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                cacheWidth: 300,
-                                              ),
-                                            );
-                                          }
-                                          return const Center(
-                                            child: Icon(
-                                              Icons.music_note,
-                                              color: Colors.white,
-                                              size: 48,
-                                            ),
-                                          );
-                                        },
-                                        loading: () => const Center(
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        error: (_, _) => const Center(
-                                          child: Icon(
-                                            Icons.music_note,
-                                            color: Colors.white,
-                                            size: 48,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              song.title,
-                              style: const TextStyle(
-                                color: Color(0xFF111827),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                height: 1.2,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              song.artist ?? "Unknown",
-                              style: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                  _buildHorizontalList(
+                    title: "Recently Added",
+                    songs: List.from(musicState.allSongs)..sort((a, b) => (b.dateAdded ?? 0).compareTo(a.dateAdded ?? 0)),
+                    ref: ref,
+                  ),
+                  const SizedBox(height: 32),
+
+                  _buildHorizontalList(
+                    title: "Recently Played",
+                    songs: musicState.recentlyPlayed,
+                    ref: ref,
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildHorizontalList({
+    required String title,
+    required List<SongModel> songs,
+    required WidgetRef ref,
+  }) {
+    final displaySongs = songs.take(15).toList();
+    
+    if (displaySongs.isEmpty) {
+      return const SizedBox();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF374151),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 220,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            scrollDirection: Axis.horizontal,
+            itemCount: displaySongs.length,
+            itemBuilder: (context, index) {
+              final song = displaySongs[index];
+              return Container(
+                width: 140,
+                margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: InkWell(
+                  onTap: () {
+                    ref.read(musicProvider.notifier).playSong(song, contextList: displaySongs);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3C2C2),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final art = ref.watch(artworkProvider(song.data));
+                            return art.when(
+                              data: (bytes) {
+                                if (bytes != null) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.file(
+                                      bytes,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  );
+                                }
+                                return const Icon(
+                                  Icons.music_note_rounded,
+                                  color: Colors.white,
+                                  size: 48,
+                                );
+                              },
+                              loading: () => const Center(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
+                              error: (_, __) => const Icon(
+                                Icons.music_note_rounded,
+                                color: Colors.white,
+                                size: 48,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        song.title,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        song.artist ?? "Unknown",
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
