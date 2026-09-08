@@ -55,9 +55,12 @@ class LyricNotifier extends Notifier<LyricState> {
     try {
       final file = File(audioPath);
       final dir = file.parent.path;
-      final name = file.uri.pathSegments.last.split('.').first;
+      final basename = audioPath.split(Platform.pathSeparator).last;
+      final lastDot = basename.lastIndexOf('.');
+      final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
       
-      final lrcFile = File('$dir/$name.lrc');
+      final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
+      print("Looking for LRC file at: ${lrcFile.path}");
       
       if (await lrcFile.exists()) {
         final content = await lrcFile.readAsString();
@@ -76,7 +79,7 @@ class LyricNotifier extends Notifier<LyricState> {
 
   List<LyricLine> _parseLrc(String lrc) {
     final List<LyricLine> lines = [];
-    final regex = RegExp(r'\[(\d+):(\d+\.\d+)\](.*)');
+    final regex = RegExp(r'\[(\d+):(\d+(?:\.\d+)?)\](.*)');
     
     for (final line in lrc.split('\n')) {
       final match = regex.firstMatch(line);
@@ -121,9 +124,12 @@ class LyricNotifier extends Notifier<LyricState> {
     try {
       final file = File(audioPath);
       final dir = file.parent.path;
-      final name = file.uri.pathSegments.last.split('.').first;
+      final basename = audioPath.split(Platform.pathSeparator).last;
+      final lastDot = basename.lastIndexOf('.');
+      final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
       
-      final lrcFile = File('$dir/$name.lrc');
+      final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
+      print("Looking for LRC file at: ${lrcFile.path}");
       await lrcFile.writeAsString(syncedLyrics);
       
       final parsed = _parseLrc(syncedLyrics);

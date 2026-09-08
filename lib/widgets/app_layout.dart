@@ -625,9 +625,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
               children: [
                 const Icon(Icons.lyrics_outlined, size: 48, color: Colors.grey),
                 const SizedBox(height: 16),
-                const Text(
-                  "Lyrics not found locally",
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                Text(
+                  lyricState.error != null ? "Error: ${lyricState.error}" : "Lyrics not found locally",
+                  style: const TextStyle(color: Colors.grey, fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
