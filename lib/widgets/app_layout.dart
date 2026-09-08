@@ -704,6 +704,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         Expanded(
           child: ReorderableListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            buildDefaultDragHandles: false,
             itemCount: queue.length - queueIndex - 1,
             onReorder: (oldIndex, newIndex) {
               final absoluteOld = queueIndex + 1 + oldIndex;
@@ -713,29 +714,40 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             itemBuilder: (context, index) {
               final absoluteIndex = queueIndex + 1 + index;
               final song = queue[absoluteIndex];
-              return InkWell(
-                key: ValueKey(song.id.toString() + '_' + absoluteIndex.toString()),
-                onTap: () {
-                  ref.read(musicProvider.notifier).skipToQueueItem(absoluteIndex);
+              return Dismissible(
+                key: ValueKey('dismiss_' + song.id.toString() + '_' + absoluteIndex.toString()),
+                direction: DismissDirection.horizontal,
+                onDismissed: (direction) {
+                  ref.read(musicProvider.notifier).removeFromQueue(absoluteIndex);
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: ReorderableDragStartListener(
-                          index: index,
-                          child: Container(
-                            padding: const EdgeInsets.only(right: 8.0, left: 4.0),
-                            child: const Icon(
-                              Icons.drag_indicator_rounded,
-                              color: Colors.grey,
-                              size: 20,
+                background: Container(
+                  color: Colors.red[400],
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 24),
+                  child: const Icon(Icons.delete_outline, color: Colors.white),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    ref.read(musicProvider.notifier).skipToQueueItem(absoluteIndex);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: ReorderableDragStartListener(
+                            index: index,
+                            child: Container(
+                              padding: const EdgeInsets.only(right: 8.0, left: 4.0),
+                              child: const Icon(
+                                Icons.drag_indicator_rounded,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                       Container(
                         width: 48,
                         height: 48,
@@ -800,7 +812,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     ],
                   ),
                 ),
-              );
+              ));
             },
           ),
         ),

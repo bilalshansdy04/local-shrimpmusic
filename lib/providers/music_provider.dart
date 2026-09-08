@@ -397,22 +397,51 @@ class MusicNotifier extends Notifier<MusicState> {
         return;
       }
     }
-    await playSong(state.queue[nextIndex]);
+    await skipToQueueItem(nextIndex);
   }
 
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 || index >= state.queue.length) return;
-    // We want to skip to that song without modifying the queue.
-    // wait, playSong() will modify the queue if we pass contextList? No, if we just pass the song, it might play from queue if it matches?
-    // Actually, playSong() checks if it's already in the queue.
-    // Wait, playSong removes the song from the queue and inserts it at queueIndex + 1!
-    // We DON'T want that for skipping to an existing queue item!
-    // We just want to change queueIndex and open the player!
-    state = state.copyWith(queueIndex: index);
-    await _player.open(Media(state.queue[index].data));
+    
+    final song = state.queue[index];
+    
+    // Update recently played
+    List<SongModel> newRecentlyPlayed = List.from(state.recentlyPlayed);
+    newRecentlyPlayed.removeWhere((s) => s.id == song.id);
+    newRecentlyPlayed.insert(0, song);
+    if (newRecentlyPlayed.length > 15) {
+      newRecentlyPlayed = newRecentlyPlayed.sublist(0, 15);
+    }
+    SharedPreferences.getInstance().then((prefs) {
+      final ids = newRecentlyPlayed.map((s) => s.id.toString()).toList();
+      prefs.setString('recently_played_ids', jsonEncode(ids));
+    });
+
+    state = state.copyWith(
+      queueIndex: index, 
+      currentSong: song,
+      recentlyPlayed: newRecentlyPlayed,
+    );
+    
+    await _player.open(Media(song.data));
     if (state.isPlaying) {
       await _player.play();
     }
+  }
+  
+  void removeFromQueue(int index) {
+    if (index < 0 || index >= state.queue.length) return;
+    if (index == state.queueIndex) return; // Cannot remove currently playing song via swipe
+    
+    final List<SongModel> newQueue = List.from(state.queue);
+    newQueue.removeAt(index);
+    
+    int newQueueIndex = state.queueIndex;
+    if (index < state.queueIndex) {
+      newQueueIndex--;
+    }
+    
+    state = state.copyWith(queue: newQueue, queueIndex: newQueueIndex);
   }
 
   void reorderQueue(int oldIndex, int newIndex) {
@@ -455,7 +484,7 @@ class MusicNotifier extends Notifier<MusicState> {
         return;
       }
     }
-    await playSong(state.queue[prevIndex]);
+    await skipToQueueItem(prevIndex);
   }
 
   void toggleShuffle() {
