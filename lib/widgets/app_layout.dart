@@ -40,6 +40,15 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     final musicState = ref.watch(musicProvider);
     final viewMode = ref.watch(playerViewModeProvider);
 
+    ref.listen(musicProvider, (previous, current) {
+      if (previous?.currentSong?.id != current.currentSong?.id && current.currentSong != null) {
+        if (ref.read(playerViewModeProvider) == PlayerViewMode.closed) {
+          // Open playing pane automatically when a song starts playing
+          Future.microtask(() => ref.read(playerViewModeProvider.notifier).setMode(PlayerViewMode.playing));
+        }
+      }
+    });
+
     final displaySong = musicState.currentSong;
 
     return Scaffold(
@@ -65,7 +74,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
-                    width: viewMode == PlayerViewMode.normal
+                    width: viewMode == PlayerViewMode.closed
                         ? (64 + 24)
                         : (320 + 24),
                   ),
@@ -88,7 +97,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
               right: 24,
               top: 24,
               bottom: 120 + 32, // Always leave space for player dock
-              child: viewMode == PlayerViewMode.normal
+              child: viewMode == PlayerViewMode.closed
                   ? _buildRightPaneClosed()
                   : _buildRightPane(viewMode, displaySong, ref),
             ),
@@ -287,7 +296,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                 GestureDetector(
                   onTap: () => ref
                       .read(playerViewModeProvider.notifier)
-                      .setMode(PlayerViewMode.normal),
+                      .setMode(PlayerViewMode.closed),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -353,186 +362,361 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       ],
                     ),
                   )
-                : mode == PlayerViewMode.lyric
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        "Wait a minute...",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          fontSize: 16,
-                          height: 2,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Album Art
-                        AspectRatio(
-                          aspectRatio: 1,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: Colors.grey[200],
-                            ),
-                            child: Consumer(
-                              builder: (context, ref, _) {
-                                final art = ref.watch(artworkProvider(song.data));
-                                return art.when(
-                                  data: (bytes) {
-                                    if (bytes != null) {
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Image.file(
-                                          bytes,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      );
-                                    }
-                                    return const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey));
-                                  },
-                                  loading: () => const Center(child: CircularProgressIndicator()),
-                                  error: (_, __) => const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey)),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Title & Artist
-                        Text(
-                          song.title,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          song.artist ?? "Unknown",
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        
-                        const Spacer(),
-                        
-                        // Next in queue card
-                        if (nextSong != null)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 24),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBE6),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Next in queue",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    // Mini Art
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: Colors.grey[300],
-                                      ),
-                                      child: Consumer(
-                                        builder: (context, ref, _) {
-                                          final nextArt = ref.watch(artworkProvider(nextSong.data));
-                                          return nextArt.when(
-                                            data: (bytes) {
-                                              if (bytes != null) {
-                                                return ClipRRect(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  child: Image.file(
-                                                    bytes,
-                                                    fit: BoxFit.cover,
-                                                    cacheWidth: 100,
-                                                  ),
-                                                );
-                                              }
-                                              return const Icon(Icons.music_note, color: Colors.grey);
-                                            },
-                                            loading: () => const SizedBox(),
-                                            error: (_, __) => const SizedBox(),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    
-                                    // Title & Artist
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            nextSong.title,
-                                            style: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            nextSong.artist ?? "Unknown",
-                                            style: TextStyle(
-                                              color: Colors.grey[800],
-                                              fontSize: 12,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    
-                                    const Icon(
-                                      Icons.more_horiz_rounded,
-                                      color: Color(0xFFFF4500),
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+                : _buildActivePaneContent(mode, song, nextSong, queue, queueIndex),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActivePaneContent(PlayerViewMode mode, SongModel song, SongModel? nextSong, List<SongModel> queue, int queueIndex) {
+    switch (mode) {
+      case PlayerViewMode.playing:
+        return _buildPlayingPaneView(song, nextSong);
+      case PlayerViewMode.lyric:
+        return _buildLyricPaneView(song);
+      case PlayerViewMode.queue:
+        return _buildQueuePaneView(queue, queueIndex);
+      case PlayerViewMode.closed:
+        return const SizedBox();
+    }
+  }
+
+  Widget _buildPlayingPaneView(SongModel song, SongModel? nextSong) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Album Art
+          AspectRatio(
+            aspectRatio: 1,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[200],
+              ),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final art = ref.watch(artworkProvider(song.data));
+                  return art.when(
+                    data: (bytes) {
+                      if (bytes != null) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            bytes,
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      }
+                      return const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey));
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey)),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Title & Artist
+          Text(
+            song.title,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            song.artist ?? "Unknown",
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          
+          const Spacer(),
+          
+          // Next in queue card
+          if (nextSong != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBE6),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Next in queue",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Mini Art
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[300],
+                        ),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final nextArt = ref.watch(artworkProvider(nextSong.data));
+                            return nextArt.when(
+                              data: (bytes) {
+                                if (bytes != null) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      bytes,
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 100,
+                                    ),
+                                  );
+                                }
+                                return const Icon(Icons.music_note, color: Colors.grey);
+                              },
+                              loading: () => const SizedBox(),
+                              error: (_, __) => const SizedBox(),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      
+                      // Title & Artist
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nextSong.title,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              nextSong.artist ?? "Unknown",
+                              style: TextStyle(
+                                color: Colors.grey[800],
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const Icon(
+                        Icons.more_horiz_rounded,
+                        color: Color(0xFFFF4500),
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLyricPaneView(SongModel song) {
+    // Mock lyrics for now
+    final List<String> lyrics = [
+      "Wait a minute...",
+      "What did you just say?",
+      "I couldn't hear you",
+      "Over the sound of my heart",
+      "Beating so fast",
+      "Like a drum",
+      "In the night",
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: ListView.builder(
+        itemCount: lyrics.length,
+        itemBuilder: (context, index) {
+          final isCurrent = index == 3;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              lyrics[index],
+              style: TextStyle(
+                color: isCurrent ? Colors.black : Colors.grey[500],
+                fontSize: isCurrent ? 22 : 18,
+                fontWeight: FontWeight.bold,
+                height: 1.5,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQueuePaneView(List<SongModel> queue, int queueIndex) {
+    return Column(
+      children: [
+        // Tabs
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF4500),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "Playing Next",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 24),
+              const Text(
+                "History",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Playing Next",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                "Clear",
+                style: TextStyle(
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: queue.length - queueIndex - 1,
+            itemBuilder: (context, index) {
+              final song = queue[queueIndex + 1 + index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final art = ref.watch(artworkProvider(song.data));
+                          return art.when(
+                            data: (bytes) {
+                              if (bytes != null) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    bytes,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 100,
+                                  ),
+                                );
+                              }
+                              return const Icon(Icons.music_note, color: Colors.grey);
+                            },
+                            loading: () => const SizedBox(),
+                            error: (_, __) => const SizedBox(),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            song.title,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -873,7 +1057,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           );
                           notifier.setMode(
                             viewMode == PlayerViewMode.lyric
-                                ? PlayerViewMode.normal
+                                ? PlayerViewMode.playing
                                 : PlayerViewMode.lyric,
                           );
                         },
@@ -923,7 +1107,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           );
                           notifier.setMode(
                             viewMode == PlayerViewMode.queue
-                                ? PlayerViewMode.normal
+                                ? PlayerViewMode.playing
                                 : PlayerViewMode.queue,
                           );
                         },

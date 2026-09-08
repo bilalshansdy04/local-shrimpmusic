@@ -70,7 +70,8 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
         return _buildLyricView(ref, state);
       case PlayerViewMode.queue:
         return _buildQueueView(ref, state);
-      case PlayerViewMode.normal:
+      case PlayerViewMode.playing:
+      case PlayerViewMode.closed:
       default:
         return _buildNormalView(ref, state);
     }
@@ -364,7 +365,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
           ),
           onPressed: () => ref
               .read(playerViewModeProvider.notifier)
-              .setMode(PlayerViewMode.normal),
+              .setMode(PlayerViewMode.playing),
         ),
         const SizedBox(height: 32),
       ],
@@ -422,7 +423,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
           ),
           onPressed: () => ref
               .read(playerViewModeProvider.notifier)
-              .setMode(PlayerViewMode.normal),
+              .setMode(PlayerViewMode.playing),
         ),
         const SizedBox(height: 32),
       ],
