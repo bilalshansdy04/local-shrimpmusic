@@ -1,4 +1,4 @@
-import "package:flutter/material.dart";
+﻿import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -41,10 +41,15 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     final viewMode = ref.watch(playerViewModeProvider);
 
     ref.listen(musicProvider, (previous, current) {
-      if (previous?.currentSong?.id != current.currentSong?.id && current.currentSong != null) {
+      if (previous?.currentSong?.id != current.currentSong?.id &&
+          current.currentSong != null) {
         if (ref.read(playerViewModeProvider) == PlayerViewMode.closed) {
           // Open playing pane automatically when a song starts playing
-          Future.microtask(() => ref.read(playerViewModeProvider.notifier).setMode(PlayerViewMode.playing));
+          Future.microtask(
+            () => ref
+                .read(playerViewModeProvider.notifier)
+                .setMode(PlayerViewMode.playing),
+          );
         }
       }
     });
@@ -298,15 +303,14 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       .read(playerViewModeProvider.notifier)
                       .setMode(PlayerViewMode.closed),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF4500),
-                      borderRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     child: const Icon(
-                      Icons.play_arrow_rounded, // Similar to the icon in the image
-                      color: Colors.white,
-                      size: 20,
+                      Icons.view_sidebar_outlined,
+                      color: Color(0xFFFF4500),
+                      size: 28,
                     ),
                   ),
                 ),
@@ -320,7 +324,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     const SizedBox(width: 16),
                     GestureDetector(
                       onTap: () {
-                         Navigator.push(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const MusicScreen(),
@@ -338,7 +342,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: song == null
                 ? Center(
@@ -355,21 +359,33 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           "No Music Playing",
                           style: TextStyle(
                             color: Colors.grey[500],
-                            fontSize: 16,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
                   )
-                : _buildActivePaneContent(mode, song, nextSong, queue, queueIndex),
+                : _buildActivePaneContent(
+                    mode,
+                    song,
+                    nextSong,
+                    queue,
+                    queueIndex,
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActivePaneContent(PlayerViewMode mode, SongModel song, SongModel? nextSong, List<SongModel> queue, int queueIndex) {
+  Widget _buildActivePaneContent(
+    PlayerViewMode mode,
+    SongModel song,
+    SongModel? nextSong,
+    List<SongModel> queue,
+    int queueIndex,
+  ) {
     switch (mode) {
       case PlayerViewMode.playing:
         return _buildPlayingPaneView(song, nextSong);
@@ -383,7 +399,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
   }
 
   Widget _buildPlayingPaneView(SongModel song, SongModel? nextSong) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,29 +420,39 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       if (bytes != null) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.file(
-                            bytes,
-                            fit: BoxFit.cover,
-                          ),
+                          child: Image.file(bytes, fit: BoxFit.cover),
                         );
                       }
-                      return const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey));
+                      return const Center(
+                        child: Icon(
+                          Icons.music_note,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                      );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey)),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => const Center(
+                      child: Icon(
+                        Icons.music_note,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
                   );
                 },
               ),
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Title & Artist
           Text(
             song.title,
             style: const TextStyle(
               color: Colors.black,
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
             ),
@@ -438,15 +464,42 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             song.artist ?? "Unknown",
             style: TextStyle(
               color: Colors.grey[700],
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          
-          const Spacer(),
-          
+          Consumer(
+            builder: (context, ref, _) {
+              final state = ref.watch(musicProvider);
+              int bitrate = state.currentBitrate ?? 0;
+
+              // if (bitrate <= 0 && song.size != null && song.duration != null && song.duration! > 0) {
+              //   bitrate = ((song.size! * 8) / song.duration!).round();
+              // }
+
+              if (bitrate > 0) {
+                final displayBitrate = bitrate > 1000
+                    ? (bitrate / 1000).round()
+                    : bitrate;
+                return Text(
+                  "$displayBitrate kbps",
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+              }
+              return const SizedBox();
+            },
+          ),
+
+          const SizedBox(height: 24),
+
           // Next in queue card
           if (nextSong != null)
             Container(
@@ -460,7 +513,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Next in queue",
+                    "Next Music",
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 14,
@@ -480,7 +533,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                         ),
                         child: Consumer(
                           builder: (context, ref, _) {
-                            final nextArt = ref.watch(artworkProvider(nextSong.data));
+                            final nextArt = ref.watch(
+                              artworkProvider(nextSong.data),
+                            );
                             return nextArt.when(
                               data: (bytes) {
                                 if (bytes != null) {
@@ -493,7 +548,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                                     ),
                                   );
                                 }
-                                return const Icon(Icons.music_note, color: Colors.grey);
+                                return const Icon(
+                                  Icons.music_note,
+                                  color: Colors.grey,
+                                );
                               },
                               loading: () => const SizedBox(),
                               error: (_, __) => const SizedBox(),
@@ -502,7 +560,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      
+
                       // Title & Artist
                       Expanded(
                         child: Column(
@@ -530,7 +588,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           ],
                         ),
                       ),
-                      
+
                       const Icon(
                         Icons.more_horiz_rounded,
                         color: Color(0xFFFF4500),
@@ -590,7 +648,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF4500),
                   borderRadius: BorderRadius.circular(8),
@@ -674,7 +735,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                                   ),
                                 );
                               }
-                              return const Icon(Icons.music_note, color: Colors.grey);
+                              return const Icon(
+                                Icons.music_note,
+                                color: Colors.grey,
+                              );
                             },
                             loading: () => const SizedBox(),
                             error: (_, __) => const SizedBox(),

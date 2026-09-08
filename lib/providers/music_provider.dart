@@ -40,6 +40,19 @@ final artworkProvider = FutureProvider.family<File?, String>((
   return null;
 });
 
+final audioBitrateProvider = FutureProvider.family<int?, String>((
+  ref,
+  filePath,
+) async {
+  return await Isolate.run(() {
+    try {
+      final metadata = readMetadata(File(filePath), getImage: false);
+      return metadata.bitrate;
+    } catch (e) {}
+    return null;
+  });
+});
+
 enum LoopMode { off, all, one }
 
 class MusicState {
@@ -56,6 +69,7 @@ class MusicState {
   final bool hasPermission;
   final bool isLoading;
   final String? musicFolderPath;
+  final int? currentBitrate;
 
   MusicState({
     this.allSongs = const [],
@@ -71,6 +85,7 @@ class MusicState {
     this.hasPermission = false,
     this.isLoading = true,
     this.musicFolderPath,
+    this.currentBitrate,
   });
 
   MusicState copyWith({
@@ -87,6 +102,7 @@ class MusicState {
     bool? hasPermission,
     bool? isLoading,
     String? musicFolderPath,
+    int? currentBitrate,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -102,6 +118,7 @@ class MusicState {
       hasPermission: hasPermission ?? this.hasPermission,
       isLoading: isLoading ?? this.isLoading,
       musicFolderPath: musicFolderPath ?? this.musicFolderPath,
+      currentBitrate: currentBitrate ?? this.currentBitrate,
     );
   }
 }
@@ -128,6 +145,16 @@ class MusicNotifier extends Notifier<MusicState> {
 
     _player.stream.volume.listen((volume) {
       state = state.copyWith(volume: volume);
+    });
+
+    _player.stream.tracks.listen((tracks) {
+      final audioTracks = tracks.audio;
+      if (audioTracks.isNotEmpty) {
+        final track = audioTracks.first;
+        if (track.bitrate != null) {
+           state = state.copyWith(currentBitrate: track.bitrate);
+        }
+      }
     });
 
     _player.stream.completed.listen((completed) {
@@ -208,6 +235,7 @@ class MusicNotifier extends Notifier<MusicState> {
                     album = metadata.album!;
                   if (metadata.duration != null)
                     durationMs = metadata.duration!.inMilliseconds;
+                  print('Read bitrate for $title: ${metadata.bitrate}');
                 } catch (e) {}
 
                 results.add({
