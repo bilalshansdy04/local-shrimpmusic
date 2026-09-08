@@ -1,4 +1,4 @@
-import "package:flutter/material.dart";
+﻿import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -450,13 +450,18 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                   final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
                   return "${mins}:${secs}";
                 }
+
                 final pos = musicState.position;
                 final dur = musicState.duration;
-                
+
                 return Row(
                   children: [
                     Text(
-                      formatDuration(_dragPosition != null ? Duration(milliseconds: _dragPosition!.toInt()) : pos),
+                      formatDuration(
+                        _dragPosition != null
+                            ? Duration(milliseconds: _dragPosition!.toInt())
+                            : pos,
+                      ),
                       style: TextStyle(
                         color: Colors.grey[800],
                         fontSize: 13,
@@ -468,27 +473,50 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       child: SliderTheme(
                         data: SliderThemeData(
                           trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 12,
+                          ),
                           activeTrackColor: const Color(0xFFFF4500),
                           inactiveTrackColor: Colors.grey[300],
                           thumbColor: const Color(0xFFFF4500),
                         ),
                         child: Slider(
-                          value: (_dragPosition ?? pos.inMilliseconds.toDouble()).clamp(0.0, dur.inMilliseconds.toDouble() > 0 ? dur.inMilliseconds.toDouble() : 1.0),
-                          max: dur.inMilliseconds.toDouble() > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                          value:
+                              (_dragPosition ?? pos.inMilliseconds.toDouble())
+                                  .clamp(
+                                    0.0,
+                                    dur.inMilliseconds.toDouble() > 0
+                                        ? dur.inMilliseconds.toDouble()
+                                        : 1.0,
+                                  ),
+                          max: dur.inMilliseconds.toDouble() > 0
+                              ? dur.inMilliseconds.toDouble()
+                              : 1.0,
                           onChangeStart: (val) {
-                            setState(() { _dragPosition = val; });
+                            setState(() {
+                              _dragPosition = val;
+                            });
                           },
                           onChanged: (val) {
-                            setState(() { _dragPosition = val; });
+                            setState(() {
+                              _dragPosition = val;
+                            });
                           },
                           onChangeEnd: (val) async {
                             final target = val;
-                            setState(() { _dragPosition = val; });
-                            await ref.read(musicProvider.notifier).seek(Duration(milliseconds: val.toInt()));
+                            setState(() {
+                              _dragPosition = val;
+                            });
+                            await ref
+                                .read(musicProvider.notifier)
+                                .seek(Duration(milliseconds: val.toInt()));
                             if (mounted && _dragPosition == target) {
-                              setState(() { _dragPosition = null; });
+                              setState(() {
+                                _dragPosition = null;
+                              });
                             }
                           },
                         ),
@@ -505,7 +533,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     ),
                   ],
                 );
-              }
+              },
             ),
             const SizedBox(height: 16),
             Row(
@@ -686,23 +714,37 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                         },
                       ),
                       const SizedBox(width: 16),
-                      const Icon(
-                        Icons.volume_up_rounded,
-                        color: Color(0xFFFF4500),
+                      Icon(
+                        state.volume == 0
+                            ? Icons.volume_off_rounded
+                            : state.volume < 50
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_up_rounded,
+                        color: const Color(0xFFFF4500),
                         size: 24,
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 60,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: 0.6,
-                          child: Container(color: const Color(0xFFFF4500)),
+                      SizedBox(
+                        width: 80,
+                        child: SliderTheme(
+                          data: SliderThemeData(
+                            trackHeight: 4,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 12,
+                            ),
+                            activeTrackColor: const Color(0xFFFF4500),
+                            inactiveTrackColor: Colors.grey[300],
+                            thumbColor: const Color(0xFFFF4500),
+                          ),
+                          child: Slider(
+                            value: state.volume,
+                            max: 100.0,
+                            onChanged: (val) {
+                              ref.read(musicProvider.notifier).setVolume(val);
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),

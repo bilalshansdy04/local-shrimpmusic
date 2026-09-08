@@ -1,22 +1,27 @@
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 import "package:media_kit/media_kit.dart";
+
 import "dart:io";
 import "dart:isolate";
+
 import "package:path_provider/path_provider.dart";
 import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:file_picker/file_picker.dart";
 
-final artworkProvider = FutureProvider.family<File?, String>((ref, filePath) async {
+final artworkProvider = FutureProvider.family<File?, String>((
+  ref,
+  filePath,
+) async {
   try {
     final tempDir = await getTemporaryDirectory();
     final cacheFile = File('${tempDir.path}/art_${filePath.hashCode}.jpg');
-    
+
     if (cacheFile.existsSync()) {
       return cacheFile;
     }
-    
+
     final bytes = await Isolate.run(() {
       try {
         final metadata = readMetadata(File(filePath), getImage: true);
@@ -43,6 +48,7 @@ class MusicState {
   final int queueIndex;
   final bool isShuffle;
   final LoopMode loopMode;
+  final double volume;
   final SongModel? currentSong;
   final bool isPlaying;
   final Duration position;
@@ -57,6 +63,7 @@ class MusicState {
     this.queueIndex = -1,
     this.isShuffle = false,
     this.loopMode = LoopMode.off,
+    this.volume = 100.0,
     this.currentSong,
     this.isPlaying = false,
     this.position = Duration.zero,
@@ -72,6 +79,7 @@ class MusicState {
     int? queueIndex,
     bool? isShuffle,
     LoopMode? loopMode,
+    double? volume,
     SongModel? currentSong,
     bool? isPlaying,
     Duration? position,
@@ -86,6 +94,7 @@ class MusicState {
       queueIndex: queueIndex ?? this.queueIndex,
       isShuffle: isShuffle ?? this.isShuffle,
       loopMode: loopMode ?? this.loopMode,
+      volume: volume ?? this.volume,
       currentSong: currentSong ?? this.currentSong,
       isPlaying: isPlaying ?? this.isPlaying,
       position: position ?? this.position,
@@ -116,7 +125,11 @@ class MusicNotifier extends Notifier<MusicState> {
     _player.stream.duration.listen((duration) {
       state = state.copyWith(duration: duration);
     });
-    
+
+    _player.stream.volume.listen((volume) {
+      state = state.copyWith(volume: volume);
+    });
+
     _player.stream.completed.listen((completed) {
       if (completed) {
         if (state.loopMode == LoopMode.one) {
@@ -162,7 +175,11 @@ class MusicNotifier extends Notifier<MusicState> {
               await for (var entity in dir.list(recursive: true)) {
                 if (entity is File) {
                   final ext = entity.path.toLowerCase();
-                  if (ext.endsWith('.mp3') || ext.endsWith('.flac') || ext.endsWith('.wav') || ext.endsWith('.m4a') || ext.endsWith('.ogg')) {
+                  if (ext.endsWith('.mp3') ||
+                      ext.endsWith('.flac') ||
+                      ext.endsWith('.wav') ||
+                      ext.endsWith('.m4a') ||
+                      ext.endsWith('.ogg')) {
                     filePaths.add(entity.path);
                   }
                 }
@@ -174,19 +191,25 @@ class MusicNotifier extends Notifier<MusicState> {
               for (var path in filePaths) {
                 final file = File(path);
                 final filename = file.uri.pathSegments.last;
-                String title = filename.contains('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+                String title = filename.contains('.')
+                    ? filename.substring(0, filename.lastIndexOf('.'))
+                    : filename;
                 String artist = 'Unknown Artist';
                 String album = 'Unknown Album';
                 int durationMs = 0;
-                
+
                 try {
                   final metadata = readMetadata(file, getImage: false);
-                  if (metadata.title != null && metadata.title!.isNotEmpty) title = metadata.title!;
-                  if (metadata.artist != null && metadata.artist!.isNotEmpty) artist = metadata.artist!;
-                  if (metadata.album != null && metadata.album!.isNotEmpty) album = metadata.album!;
-                  if (metadata.duration != null) durationMs = metadata.duration!.inMilliseconds;
+                  if (metadata.title != null && metadata.title!.isNotEmpty)
+                    title = metadata.title!;
+                  if (metadata.artist != null && metadata.artist!.isNotEmpty)
+                    artist = metadata.artist!;
+                  if (metadata.album != null && metadata.album!.isNotEmpty)
+                    album = metadata.album!;
+                  if (metadata.duration != null)
+                    durationMs = metadata.duration!.inMilliseconds;
                 } catch (e) {}
-                
+
                 results.add({
                   '_id': path.hashCode,
                   '_data': path,
@@ -204,7 +227,7 @@ class MusicNotifier extends Notifier<MusicState> {
               }
               return results;
             });
-            
+
             for (var map in songMaps) {
               songs.add(SongModel(map));
             }
@@ -220,14 +243,20 @@ class MusicNotifier extends Notifier<MusicState> {
         );
       }
 
-      state = state.copyWith(allSongs: songs, hasPermission: true, isLoading: false);
+      state = state.copyWith(
+        allSongs: songs,
+        hasPermission: true,
+        isLoading: false,
+      );
     } else {
       state = state.copyWith(hasPermission: false, isLoading: false);
     }
   }
 
   Future<void> pickMusicFolder() async {
-    final result = await FilePicker.getDirectoryPath(dialogTitle: 'Select Music Folder');
+    final result = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Select Music Folder',
+    );
 
     if (result != null) {
       state = state.copyWith(isLoading: true);
@@ -242,7 +271,7 @@ class MusicNotifier extends Notifier<MusicState> {
   Future<void> playSong(SongModel song, {List<SongModel>? contextList}) async {
     List<SongModel> newQueue = state.queue;
     int newIndex = state.queueIndex;
-    
+
     if (contextList != null) {
       if (state.isShuffle) {
         newQueue = List.from(contextList)..shuffle();
@@ -257,16 +286,24 @@ class MusicNotifier extends Notifier<MusicState> {
       newQueue = state.allSongs;
       newIndex = newQueue.indexWhere((s) => s.id == song.id);
     } else {
-       newIndex = newQueue.indexWhere((s) => s.id == song.id);
-       if (newIndex == -1) {
-          newQueue = [song, ...newQueue];
-          newIndex = 0;
-       }
+      newIndex = newQueue.indexWhere((s) => s.id == song.id);
+      if (newIndex == -1) {
+        newQueue = [song, ...newQueue];
+        newIndex = 0;
+      }
     }
-    
-    state = state.copyWith(currentSong: song, queue: newQueue, queueIndex: newIndex);
+
+    state = state.copyWith(
+      currentSong: song,
+      queue: newQueue,
+      queueIndex: newIndex,
+    );
     await _player.open(Media(song.data));
     await _player.play();
+  }
+
+  Future<void> setVolume(double volume) async {
+    await _player.setVolume(volume);
   }
 
   Future<void> togglePlay() async {
@@ -281,16 +318,16 @@ class MusicNotifier extends Notifier<MusicState> {
     // Crossfade effect: Fade out
     final originalVolume = _player.state.volume;
     final step = originalVolume / 5;
-    
+
     for (int i = 0; i < 5; i++) {
       await _player.setVolume(originalVolume - (step * i));
       await Future.delayed(const Duration(milliseconds: 30));
     }
     await _player.setVolume(0);
-    
+
     // Perform seek
     await _player.seek(position);
-    
+
     // Crossfade effect: Fade in
     for (int i = 0; i <= 5; i++) {
       await _player.setVolume(step * i);
@@ -315,12 +352,12 @@ class MusicNotifier extends Notifier<MusicState> {
 
   Future<void> previous() async {
     if (state.queue.isEmpty) return;
-    
+
     if (state.position.inSeconds > 3) {
       await seek(Duration.zero);
       return;
     }
-    
+
     int prevIndex = state.queueIndex - 1;
     if (prevIndex < 0) {
       if (state.loopMode == LoopMode.all) {
@@ -332,14 +369,14 @@ class MusicNotifier extends Notifier<MusicState> {
     }
     await playSong(state.queue[prevIndex]);
   }
-  
+
   void toggleShuffle() {
     if (state.queue.isEmpty || state.currentSong == null) return;
     final newShuffle = !state.isShuffle;
-    
+
     List<SongModel> newQueue;
     int newIndex;
-    
+
     if (newShuffle) {
       newQueue = List.from(state.allSongs)..shuffle();
       newQueue.removeWhere((s) => s.id == state.currentSong!.id);
@@ -349,16 +386,26 @@ class MusicNotifier extends Notifier<MusicState> {
       newQueue = state.allSongs;
       newIndex = newQueue.indexWhere((s) => s.id == state.currentSong!.id);
     }
-    
-    state = state.copyWith(isShuffle: newShuffle, queue: newQueue, queueIndex: newIndex);
+
+    state = state.copyWith(
+      isShuffle: newShuffle,
+      queue: newQueue,
+      queueIndex: newIndex,
+    );
   }
-  
+
   void toggleLoop() {
     LoopMode nextMode;
     switch (state.loopMode) {
-      case LoopMode.off: nextMode = LoopMode.all; break;
-      case LoopMode.all: nextMode = LoopMode.one; break;
-      case LoopMode.one: nextMode = LoopMode.off; break;
+      case LoopMode.off:
+        nextMode = LoopMode.all;
+        break;
+      case LoopMode.all:
+        nextMode = LoopMode.one;
+        break;
+      case LoopMode.one:
+        nextMode = LoopMode.off;
+        break;
     }
     state = state.copyWith(loopMode: nextMode);
   }
