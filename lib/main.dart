@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:media_kit/media_kit.dart";
 import "widgets/app_layout.dart";
@@ -26,6 +26,11 @@ class ShrimpLocalApp extends StatelessWidget {
           onSurface: const Color(0xFF111827), // text-gray-900
         ),
         fontFamily: "Montserrat",
+        scrollbarTheme: ScrollbarThemeData(
+          thickness: WidgetStateProperty.all(4.0),
+          thumbColor: WidgetStateProperty.all(const Color(0xFFFF7745)),
+          radius: const Radius.circular(8),
+        ),
       ),
       home: const AppLayout(),
       debugShowCheckedModeBanner: false,
