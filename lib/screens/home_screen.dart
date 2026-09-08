@@ -80,14 +80,14 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  _buildHorizontalList(
+                  _buildGrid(
                     title: "Recently Added",
                     songs: List.from(musicState.allSongs)..sort((a, b) => (b.dateAdded ?? 0).compareTo(a.dateAdded ?? 0)),
                     ref: ref,
                   ),
                   const SizedBox(height: 32),
 
-                  _buildHorizontalList(
+                  _buildGrid(
                     title: "Recently Played",
                     songs: musicState.recentlyPlayed,
                     ref: ref,
@@ -98,12 +98,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHorizontalList({
+  Widget _buildGrid({
     required String title,
     required List<SongModel> songs,
     required WidgetRef ref,
   }) {
-    final displaySongs = songs.take(15).toList();
+    final displaySongs = songs.take(10).toList();
     
     if (displaySongs.isEmpty) {
       return const SizedBox();
@@ -124,28 +124,31 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 220,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            scrollDirection: Axis.horizontal,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              childAspectRatio: 0.8,
+              crossAxisSpacing: 24,
+              mainAxisSpacing: 32,
+            ),
             itemCount: displaySongs.length,
             itemBuilder: (context, index) {
               final song = displaySongs[index];
-              return Container(
-                width: 140,
-                margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: InkWell(
-                  onTap: () {
-                    ref.read(musicProvider.notifier).playSong(song, contextList: displaySongs);
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 140,
-                        height: 140,
+              return InkWell(
+                onTap: () {
+                  ref.read(musicProvider.notifier).playSong(song, contextList: displaySongs);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
                         decoration: BoxDecoration(
                           color: const Color(0xFFF3C2C2),
                           borderRadius: BorderRadius.circular(16),
@@ -189,29 +192,29 @@ class HomeScreen extends ConsumerWidget {
                           },
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        song.title,
-                        style: const TextStyle(
-                          color: Color(0xFF111827),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      song.title,
+                      style: const TextStyle(
+                        color: Color(0xFF111827),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        song.artist ?? "Unknown",
-                        style: const TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      song.artist ?? "Unknown",
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 13,
                       ),
-                    ],
-                  ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               );
             },

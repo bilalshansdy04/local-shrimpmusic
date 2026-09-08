@@ -64,7 +64,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             child: Row(
               children: [
                 if (isDesktop)
-                  const SizedBox(width: 104), // 80 width + 24 left
+                  const SizedBox(width: 128), // 24 (left) + 80 (sidebar) + 24 (gap)
 
                 Expanded(
                   child: Padding(
@@ -80,8 +80,8 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
                   width: viewMode == PlayerViewMode.closed
-                      ? 88 // 64 (right pane closed width) + 24 (right spacing)
-                      : 364, // 340 (right pane open width) + 24 (right spacing)
+                      ? 112 // 24 (right) + 64 (closed pane) + 24 (gap)
+                      : 388, // 24 (right) + 340 (open pane) + 24 (gap)
                   ),
               ],
             ),
