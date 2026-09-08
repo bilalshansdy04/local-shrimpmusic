@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
@@ -252,7 +252,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             onPressed: () {
               ref
                   .read(playerViewModeProvider.notifier)
-                  .setMode(PlayerViewMode.lyric);
+                  .setMode(PlayerViewMode.playing);
             },
           ),
         ],

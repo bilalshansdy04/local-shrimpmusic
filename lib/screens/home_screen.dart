@@ -105,9 +105,6 @@ class HomeScreen extends ConsumerWidget {
                       return InkWell(
                         onTap: () {
                           ref.read(musicProvider.notifier).playSong(song, contextList: musicState.allSongs);
-                          ref
-                              .read(playerViewModeProvider.notifier)
-                              .setMode(PlayerViewMode.lyric);
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: Column(
