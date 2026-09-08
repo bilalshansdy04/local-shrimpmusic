@@ -22,36 +22,43 @@ class HomeScreen extends ConsumerWidget {
               ),
             )
           : musicState.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFF4500)),
-                )
-              : musicState.allSongs.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            musicState.musicFolderPath != null 
-                                ? "No songs found in "
-                                : "No local songs found in your default Music folder.",
-                            style: const TextStyle(color: Color(0xFF111827), fontSize: 16),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => ref.read(musicProvider.notifier).pickMusicFolder(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF4500),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            ),
-                            icon: const Icon(Icons.folder_open),
-                            label: const Text("Select Music Folder"),
-                          ),
-                        ],
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFFF4500)),
+            )
+          : musicState.allSongs.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    musicState.musicFolderPath != null
+                        ? "No songs found in "
+                        : "No local songs found in your default Music folder.",
+                    style: const TextStyle(
+                      color: Color(0xFF111827),
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        ref.read(musicProvider.notifier).pickMusicFolder(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4500),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
                       ),
-                    )
-                  : SingleChildScrollView(
+                    ),
+                    icon: const Icon(Icons.folder_open),
+                    label: const Text("Select Music Folder"),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
               padding: const EdgeInsets.only(
                 left: 24.0,
                 right: 24.0,
@@ -97,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
                       final song = musicState.allSongs[index];
                       return InkWell(
                         onTap: () {
-                          ref.read(musicProvider.notifier).playSong(song);
+                          ref.read(musicProvider.notifier).playSong(song, contextList: musicState.allSongs);
                           ref
                               .read(playerViewModeProvider.notifier)
                               .setMode(PlayerViewMode.lyric);
@@ -125,16 +132,42 @@ class HomeScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(16),
                                   child: Consumer(
                                     builder: (context, ref, child) {
-                                      final artworkAsync = ref.watch(artworkProvider(song.data));
+                                      final artworkAsync = ref.watch(
+                                        artworkProvider(song.data),
+                                      );
                                       return artworkAsync.when(
                                         data: (bytes) {
                                           if (bytes != null) {
-                                            return RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity, cacheWidth: 300));
+                                            return RepaintBoundary(
+                                              child: Image.file(
+                                                bytes,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                cacheWidth: 300,
+                                              ),
+                                            );
                                           }
-                                          return const Center(child: Icon(Icons.music_note, color: Colors.white, size: 48));
+                                          return const Center(
+                                            child: Icon(
+                                              Icons.music_note,
+                                              color: Colors.white,
+                                              size: 48,
+                                            ),
+                                          );
                                         },
-                                        loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                                        error: (_, __) => const Center(child: Icon(Icons.music_note, color: Colors.white, size: 48)),
+                                        loading: () => const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        error: (_, _) => const Center(
+                                          child: Icon(
+                                            Icons.music_note,
+                                            color: Colors.white,
+                                            size: 48,
+                                          ),
+                                        ),
                                       );
                                     },
                                   ),
@@ -175,4 +208,3 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
-

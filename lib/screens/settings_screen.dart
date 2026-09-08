@@ -1,5 +1,6 @@
 ﻿import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
+
 import "../providers/music_provider.dart";
 
 class SettingsScreen extends ConsumerWidget {
@@ -12,7 +13,12 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 32.0, right: 32.0, top: 48.0, bottom: 180.0),
+        padding: const EdgeInsets.only(
+          left: 32.0,
+          right: 32.0,
+          top: 48.0,
+          bottom: 180.0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -26,7 +32,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Music Library Section
             const Text(
               "Music Library",
@@ -37,7 +43,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -47,7 +53,7 @@ class SettingsScreen extends ConsumerWidget {
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withValues(alpha: 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -75,11 +81,17 @@ class SettingsScreen extends ConsumerWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
                     ),
                     child: const Text(
                       "Add a source",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -91,4 +103,3 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
-

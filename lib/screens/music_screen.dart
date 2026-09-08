@@ -5,8 +5,15 @@ import "package:on_audio_query/on_audio_query.dart";
 import "../providers/ui_provider.dart";
 import "../providers/music_provider.dart";
 
-class MusicScreen extends ConsumerWidget {
+class MusicScreen extends ConsumerStatefulWidget {
   const MusicScreen({super.key});
+
+  @override
+  ConsumerState<MusicScreen> createState() => _MusicScreenState();
+}
+
+class _MusicScreenState extends ConsumerState<MusicScreen> {
+  double? _dragPosition;
 
   String formatDuration(Duration d) {
     String minutes = (d.inMinutes % 60).toString().padLeft(2, "0");
@@ -15,7 +22,7 @@ class MusicScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final mode = ref.watch(playerViewModeProvider);
     final musicState = ref.watch(musicProvider);
     final song = musicState.currentSong;
@@ -93,19 +100,28 @@ class MusicScreen extends ConsumerWidget {
                   ),
                   child: Consumer(
                     builder: (context, ref, child) {
-                      final artworkAsync = ref.watch(artworkProvider(state.currentSong!.data));
+                      final artworkAsync = ref.watch(
+                        artworkProvider(state.currentSong!.data),
+                      );
                       return artworkAsync.when(
                         data: (bytes) {
                           if (bytes != null) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(32),
-                              child: RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, cacheWidth: 800)),
+                              child: RepaintBoundary(
+                                child: Image.file(
+                                  bytes,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 800,
+                                ),
+                              ),
                             );
                           }
                           return _buildFallbackArtwork();
                         },
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (_, __) => _buildFallbackArtwork(),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (_, _) => _buildFallbackArtwork(),
                       );
                     },
                   ),
@@ -157,14 +173,24 @@ class MusicScreen extends ConsumerWidget {
               thumbColor: const Color(0xFFEB5424),
             ),
             child: Slider(
-              value: state.position.inSeconds.toDouble(),
-              max: state.duration.inSeconds.toDouble() > 0
-                  ? state.duration.inSeconds.toDouble()
+              value: (_dragPosition ?? state.position.inMilliseconds.toDouble())
+                  .clamp(0.0, state.duration.inMilliseconds.toDouble() > 0 ? state.duration.inMilliseconds.toDouble() : 1.0),
+              max: state.duration.inMilliseconds.toDouble() > 0
+                  ? state.duration.inMilliseconds.toDouble()
                   : 1.0,
+              onChangeStart: (v) {
+                setState(() { _dragPosition = v; });
+              },
               onChanged: (v) {
-                ref
-                    .read(musicProvider.notifier)
-                    .seek(Duration(seconds: v.toInt()));
+                setState(() { _dragPosition = v; });
+              },
+              onChangeEnd: (v) async {
+                final target = v;
+                setState(() { _dragPosition = v; });
+                await ref.read(musicProvider.notifier).seek(Duration(milliseconds: v.toInt()));
+                if (mounted && _dragPosition == target) {
+                  setState(() { _dragPosition = null; });
+                }
               },
             ),
           ),
@@ -174,7 +200,7 @@ class MusicScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  formatDuration(state.position),
+                  formatDuration(_dragPosition != null ? Duration(milliseconds: _dragPosition!.toInt()) : state.position),
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
@@ -402,6 +428,7 @@ class MusicScreen extends ConsumerWidget {
       ],
     );
   }
+
   Widget _buildFallbackArtwork() {
     return Container(
       decoration: BoxDecoration(
@@ -413,13 +440,8 @@ class MusicScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(32),
       ),
       child: const Center(
-        child: Icon(
-          Icons.music_note_rounded,
-          size: 120,
-          color: Colors.white,
-        ),
+        child: Icon(Icons.music_note_rounded, size: 120, color: Colors.white),
       ),
     );
   }
-
 }

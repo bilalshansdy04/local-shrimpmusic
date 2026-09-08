@@ -23,6 +23,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
   int _selectedIndex = 0;
   bool _isShuffleActive = false;
   int _repeatMode = 0;
+  double? _dragPosition;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -167,7 +168,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
-              color: _selectedIndex == 5 ? const Color(0xFFFF4500) : Colors.grey.shade500,
+              color: _selectedIndex == 5
+                  ? const Color(0xFFFF4500)
+                  : Colors.grey.shade500,
               size: 28,
             ),
             onPressed: () {
@@ -439,48 +442,70 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Text(
-                  "0:00",
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(4),
+            Consumer(
+              builder: (context, ref, _) {
+                final musicState = ref.watch(musicProvider);
+                String formatDuration(Duration d) {
+                  final mins = d.inMinutes;
+                  final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
+                  return "${mins}:${secs}";
+                }
+                final pos = musicState.position;
+                final dur = musicState.duration;
+                
+                return Row(
+                  children: [
+                    Text(
+                      formatDuration(_dragPosition != null ? Duration(milliseconds: _dragPosition!.toInt()) : pos),
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    child: displaySong == null
-                        ? const SizedBox.shrink()
-                        : FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: 0.3, // Mock progress
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF4500),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  "0:00",
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                          activeTrackColor: const Color(0xFFFF4500),
+                          inactiveTrackColor: Colors.grey[300],
+                          thumbColor: const Color(0xFFFF4500),
+                        ),
+                        child: Slider(
+                          value: (_dragPosition ?? pos.inMilliseconds.toDouble()).clamp(0.0, dur.inMilliseconds.toDouble() > 0 ? dur.inMilliseconds.toDouble() : 1.0),
+                          max: dur.inMilliseconds.toDouble() > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                          onChangeStart: (val) {
+                            setState(() { _dragPosition = val; });
+                          },
+                          onChanged: (val) {
+                            setState(() { _dragPosition = val; });
+                          },
+                          onChangeEnd: (val) async {
+                            final target = val;
+                            setState(() { _dragPosition = val; });
+                            await ref.read(musicProvider.notifier).seek(Duration(milliseconds: val.toInt()));
+                            if (mounted && _dragPosition == target) {
+                              setState(() { _dragPosition = null; });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      formatDuration(dur),
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                );
+              }
             ),
             const SizedBox(height: 16),
             Row(
@@ -495,19 +520,40 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     ),
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final artworkAsync = ref.watch(artworkProvider(displaySong.data));
+                        final artworkAsync = ref.watch(
+                          artworkProvider(displaySong.data),
+                        );
                         return artworkAsync.when(
                           data: (bytes) {
                             if (bytes != null) {
                               return ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: RepaintBoundary(child: Image.file(bytes, fit: BoxFit.cover, cacheWidth: 200)),
+                                child: RepaintBoundary(
+                                  child: Image.file(
+                                    bytes,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 200,
+                                  ),
+                                ),
                               );
                             }
-                            return const Icon(Icons.music_note, color: Colors.white);
+                            return const Icon(
+                              Icons.music_note,
+                              color: Colors.white,
+                            );
                           },
-                          loading: () => const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
-                          error: (_, __) => const Icon(Icons.music_note, color: Colors.white),
+                          loading: () => const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          error: (_, _) =>
+                              const Icon(Icons.music_note, color: Colors.white),
                         );
                       },
                     ),
