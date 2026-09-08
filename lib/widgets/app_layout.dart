@@ -720,7 +720,15 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                 onDismissed: (direction) {
                   ref.read(musicProvider.notifier).removeFromQueue(absoluteIndex);
                 },
+                // Background saat digeser ke kanan (Ikon di kiri)
                 background: Container(
+                  color: Colors.red[400],
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 24),
+                  child: const Icon(Icons.delete_outline, color: Colors.white),
+                ),
+                // Background saat digeser ke kiri (Ikon di kanan)
+                secondaryBackground: Container(
                   color: Colors.red[400],
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 24),
@@ -809,6 +817,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           ],
                         ),
                       ),
+                      // Jarak tambahan di sisi kanan agar titik-titik overflow tidak mentok ke ujung layar.
+                      // Kamu bisa mengubah angka 16 ini menjadi lebih besar (misal: 32) jika ingin titik-titiknya lebih ke kiri lagi!
+                      const SizedBox(width: 16),
                     ],
                   ),
                 ),
