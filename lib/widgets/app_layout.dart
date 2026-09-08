@@ -90,7 +90,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
               bottom: 120 + 32, // Always leave space for player dock
               child: viewMode == PlayerViewMode.normal
                   ? _buildRightPaneClosed()
-                  : _buildRightPane(viewMode, displaySong),
+                  : _buildRightPane(viewMode, displaySong, ref),
             ),
 
           // Floating Player Dock (Always visible)
@@ -251,17 +251,24 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 
-  Widget _buildRightPane(PlayerViewMode mode, SongModel? song) {
+  Widget _buildRightPane(PlayerViewMode mode, SongModel? song, WidgetRef ref) {
+    final musicState = ref.watch(musicProvider);
+    final queue = musicState.queue;
+    final queueIndex = musicState.queueIndex;
+    final hasNext = queue.isNotEmpty && queueIndex + 1 < queue.length;
+    final nextSong = hasNext ? queue[queueIndex + 1] : null;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-      width: 320,
+      width: 340,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFDC5028).withValues(alpha: 0.08),
+            color: const Color(0xFFDC5028).withValues(alpha: 0.05),
             blurRadius: 35,
             offset: const Offset(0, 12),
             spreadRadius: -4,
@@ -269,32 +276,60 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Bar
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.view_sidebar_outlined,
-                    color: Color(0xFFFF4500),
-                  ),
-                  onPressed: () => ref
+                GestureDetector(
+                  onTap: () => ref
                       .read(playerViewModeProvider.notifier)
                       .setMode(PlayerViewMode.normal),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4500),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded, // Similar to the icon in the image
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
-                // Text(
-                //   mode == PlayerViewMode.lyric ? "Lyrics" : "Up Next",
-                //   style: const TextStyle(
-                //     color: Color(0xFFFF4500),
-                //     fontSize: 20,
-                //     fontWeight: FontWeight.w800,
-                //   ),
-                // ),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.more_horiz_rounded,
+                      color: Color(0xFFFF4500),
+                      size: 28,
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MusicScreen(),
+                          ),
+                        );
+                      },
+                      child: const Icon(
+                        Icons.fullscreen_rounded,
+                        color: Color(0xFFFF4500),
+                        size: 28,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+          
           Expanded(
             child: song == null
                 ? Center(
@@ -323,7 +358,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        "Ã°Å¸Å½Âµ\nBaby, I'm just trying to play it cool\nBut I just can't hide that\nI want you\n\nWait a minute...",
+                        "Wait a minute...",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.black.withValues(alpha: 0.6),
@@ -334,36 +369,166 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       ),
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: 10,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3C2C2),
-                            borderRadius: BorderRadius.circular(8),
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Album Art
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.grey[200],
+                            ),
+                            child: Consumer(
+                              builder: (context, ref, _) {
+                                final art = ref.watch(artworkProvider(song.data));
+                                return art.when(
+                                  data: (bytes) {
+                                    if (bytes != null) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.file(
+                                          bytes,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      );
+                                    }
+                                    return const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey));
+                                  },
+                                  loading: () => const Center(child: CircularProgressIndicator()),
+                                  error: (_, __) => const Center(child: Icon(Icons.music_note, size: 48, color: Colors.grey)),
+                                );
+                              },
+                            ),
                           ),
                         ),
-                        title: Text(
-                          "Queue Song ${index + 1}",
+                        const SizedBox(height: 24),
+                        
+                        // Title & Artist
+                        Text(
+                          song.title,
                           style: const TextStyle(
                             color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: Text(
-                          "Artist",
+                        const SizedBox(height: 4),
+                        Text(
+                          song.artist ?? "Unknown",
                           style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+                            color: Colors.grey[700],
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                    },
+                        
+                        const Spacer(),
+                        
+                        // Next in queue card
+                        if (nextSong != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEBE6),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Next in queue",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    // Mini Art
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        color: Colors.grey[300],
+                                      ),
+                                      child: Consumer(
+                                        builder: (context, ref, _) {
+                                          final nextArt = ref.watch(artworkProvider(nextSong.data));
+                                          return nextArt.when(
+                                            data: (bytes) {
+                                              if (bytes != null) {
+                                                return ClipRRect(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Image.file(
+                                                    bytes,
+                                                    fit: BoxFit.cover,
+                                                    cacheWidth: 100,
+                                                  ),
+                                                );
+                                              }
+                                              return const Icon(Icons.music_note, color: Colors.grey);
+                                            },
+                                            loading: () => const SizedBox(),
+                                            error: (_, __) => const SizedBox(),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    
+                                    // Title & Artist
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            nextSong.title,
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            nextSong.artist ?? "Unknown",
+                                            style: TextStyle(
+                                              color: Colors.grey[800],
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    const Icon(
+                                      Icons.more_horiz_rounded,
+                                      color: Color(0xFFFF4500),
+                                      size: 24,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
           ),
         ],
