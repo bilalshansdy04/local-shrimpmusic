@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/lyric_model.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+import 'package:audiotags/audiotags.dart';
 import 'music_provider.dart';
 
 class LyricState {
@@ -71,7 +73,31 @@ class LyricNotifier extends Notifier<LyricState> {
         }
       }
       
-      state = LyricState(lyrics: null); // Not found locally
+      // Try embedded lyrics
+      try {
+        final tag = await AudioTags.read(audioPath);
+        final embeddedLyricsStr = tag?.lyrics;
+        if (embeddedLyricsStr != null && embeddedLyricsStr.isNotEmpty) {
+          final parsed = _parseLrc(embeddedLyricsStr);
+          if (parsed.isNotEmpty) {
+            state = LyricState(lyrics: parsed);
+            return;
+          } else {
+            // Unsynced lyrics fallback
+            final List<LyricLine> plainLines = [];
+            final split = embeddedLyricsStr.split('\n');
+            for (int i = 0; i < split.length; i++) {
+              plainLines.add(LyricLine(time: Duration(milliseconds: i), text: split[i].trim()));
+            }
+            state = LyricState(lyrics: plainLines);
+            return;
+          }
+        }
+      } catch (e) {
+        print('Error reading embedded lyrics: $e');
+      }
+      
+      state = LyricState(lyrics: null); // Not found locally or embedded
     } catch (e) {
       state = LyricState(error: e.toString());
     }
