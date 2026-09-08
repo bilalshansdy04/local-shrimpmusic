@@ -10,6 +10,7 @@ import "../screens/library_screen.dart";
 import "../screens/playlists_screen.dart";
 import "../screens/settings_screen.dart";
 import "../providers/music_provider.dart";
+import "../providers/lyric_provider.dart";
 import "../providers/ui_provider.dart";
 
 class AppLayout extends ConsumerStatefulWidget {
@@ -62,7 +63,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             child: Row(
               children: [
                 if (isDesktop)
-                  const SizedBox(width: 128), // 24 (left) + 80 (sidebar) + 24 (gap)
+                  const SizedBox(
+                    width: 128,
+                  ), // 24 (left) + 80 (sidebar) + 24 (gap)
 
                 Expanded(
                   child: Padding(
@@ -77,9 +80,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
-                  width: viewMode == PlayerViewMode.closed
-                      ? 112 // 24 (right) + 64 (closed pane) + 24 (gap)
-                      : 388, // 24 (right) + 340 (open pane) + 24 (gap)
+                    width: viewMode == PlayerViewMode.closed
+                        ? 112 // 24 (right) + 64 (closed pane) + 24 (gap)
+                        : 388, // 24 (right) + 340 (open pane) + 24 (gap)
                   ),
               ],
             ),
@@ -602,38 +605,104 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 
-  Widget _buildLyricPaneView(SongModel song) {
-    // Mock lyrics for now
-    final List<String> lyrics = [
-      "Wait a minute...",
-      "What did you just say?",
-      "I couldn't hear you",
-      "Over the sound of my heart",
-      "Beating so fast",
-      "Like a drum",
-      "In the night",
-    ];
+  final ScrollController _lyricScrollController = ScrollController();
+  int _lastLyricIndex = -1;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: ListView.builder(
-        itemCount: lyrics.length,
-        itemBuilder: (context, index) {
-          final isCurrent = index == 3;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Text(
-              lyrics[index],
-              style: TextStyle(
-                color: isCurrent ? Colors.black : Colors.grey[500],
-                fontSize: isCurrent ? 22 : 18,
-                fontWeight: FontWeight.bold,
-                height: 1.5,
-              ),
+  Widget _buildLyricPaneView(SongModel song) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final lyricState = ref.watch(lyricProvider);
+        final position = ref.watch(musicProvider).position;
+
+        if (lyricState.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (lyricState.lyrics == null || lyricState.lyrics!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lyrics_outlined, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text(
+                  "Lyrics not found locally",
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _showSearchLyricModal(context, ref, song);
+                  },
+                  icon: const Icon(Icons.search),
+                  label: const Text("Search Online (LRCLIB)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () {
+                    // TODO: Open Create/Paste Modal
+                  },
+                  icon: const Icon(Icons.edit, color: Colors.black),
+                  label: const Text("Create or Paste Lyrics", style: TextStyle(color: Colors.black)),
+                ),
+              ],
             ),
           );
-        },
-      ),
+        }
+
+        final lyrics = lyricState.lyrics!;
+        int currentIndex = lyrics.indexWhere((l) => l.time > position) - 1;
+        if (currentIndex < -1) currentIndex = lyrics.length - 1;
+        if (currentIndex < 0) currentIndex = 0;
+
+        // Auto-scroll
+        if (currentIndex != _lastLyricIndex && _lyricScrollController.hasClients) {
+          _lastLyricIndex = currentIndex;
+          // Approximate height per item: 50px
+          final double offset = (currentIndex * 50.0) - (MediaQuery.of(context).size.height / 2) + 25.0;
+          if (offset > 0) {
+            _lyricScrollController.animateTo(
+              offset,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          } else {
+            _lyricScrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: ListView.builder(
+            controller: _lyricScrollController,
+            padding: const EdgeInsets.symmetric(vertical: 200.0), // Padding to allow scrolling past ends
+            itemCount: lyrics.length,
+            itemBuilder: (context, index) {
+              final isCurrent = index == currentIndex;
+              return Container(
+                height: 50.0,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  lyrics[index].text,
+                  style: TextStyle(
+                    color: isCurrent ? Colors.black : Colors.grey[400],
+                    fontSize: isCurrent ? 26 : 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -709,16 +778,25 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             onReorder: (oldIndex, newIndex) {
               final absoluteOld = queueIndex + 1 + oldIndex;
               final absoluteNew = queueIndex + 1 + newIndex;
-              ref.read(musicProvider.notifier).reorderQueue(absoluteOld, absoluteNew);
+              ref
+                  .read(musicProvider.notifier)
+                  .reorderQueue(absoluteOld, absoluteNew);
             },
             itemBuilder: (context, index) {
               final absoluteIndex = queueIndex + 1 + index;
               final song = queue[absoluteIndex];
               return Dismissible(
-                key: ValueKey('dismiss_' + song.id.toString() + '_' + absoluteIndex.toString()),
+                key: ValueKey(
+                  'dismiss_' +
+                      song.id.toString() +
+                      '_' +
+                      absoluteIndex.toString(),
+                ),
                 direction: DismissDirection.horizontal,
                 onDismissed: (direction) {
-                  ref.read(musicProvider.notifier).removeFromQueue(absoluteIndex);
+                  ref
+                      .read(musicProvider.notifier)
+                      .removeFromQueue(absoluteIndex);
                 },
                 // Background saat digeser ke kanan (Ikon di kiri)
                 background: Container(
@@ -736,7 +814,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                 ),
                 child: InkWell(
                   onTap: () {
-                    ref.read(musicProvider.notifier).skipToQueueItem(absoluteIndex);
+                    ref
+                        .read(musicProvider.notifier)
+                        .skipToQueueItem(absoluteIndex);
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -747,7 +827,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                           child: ReorderableDragStartListener(
                             index: index,
                             child: Container(
-                              padding: const EdgeInsets.only(right: 8.0, left: 4.0),
+                              padding: const EdgeInsets.only(
+                                right: 8.0,
+                                left: 4.0,
+                              ),
                               child: const Icon(
                                 Icons.drag_indicator_rounded,
                                 color: Colors.grey,
@@ -756,74 +839,75 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                             ),
                           ),
                         ),
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Consumer(
-                          builder: (context, ref, _) {
-                            final art = ref.watch(artworkProvider(song.data));
-                            return art.when(
-                              data: (bytes) {
-                                if (bytes != null) {
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      bytes,
-                                      fit: BoxFit.cover,
-                                      cacheWidth: 100,
-                                    ),
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final art = ref.watch(artworkProvider(song.data));
+                              return art.when(
+                                data: (bytes) {
+                                  if (bytes != null) {
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        bytes,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 100,
+                                      ),
+                                    );
+                                  }
+                                  return const Icon(
+                                    Icons.music_note,
+                                    color: Colors.grey,
                                   );
-                                }
-                                return const Icon(
-                                  Icons.music_note,
-                                  color: Colors.grey,
-                                );
-                              },
-                              loading: () => const SizedBox(),
-                              error: (_, __) => const SizedBox(),
-                            );
-                          },
+                                },
+                                loading: () => const SizedBox(),
+                                error: (_, __) => const SizedBox(),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              song.title,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                song.title,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 13,
+                              const SizedBox(height: 2),
+                              Text(
+                                "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      // Jarak tambahan di sisi kanan agar titik-titik overflow tidak mentok ke ujung layar.
-                      // Kamu bisa mengubah angka 16 ini menjadi lebih besar (misal: 32) jika ingin titik-titiknya lebih ke kiri lagi!
-                      const SizedBox(width: 16),
-                    ],
+                        // Jarak tambahan di sisi kanan agar titik-titik overflow tidak mentok ke ujung layar.
+                        // Kamu bisa mengubah angka 16 ini menjadi lebih besar (misal: 32) jika ingin titik-titiknya lebih ke kiri lagi!
+                        const SizedBox(width: 32),
+                      ],
+                    ),
                   ),
                 ),
-              ));
+              );
             },
           ),
         ),
@@ -1235,4 +1319,106 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
       ),
     );
   }
+
+  void _showSearchLyricModal(BuildContext context, WidgetRef ref, SongModel song) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return _SearchLyricDialog(song: song);
+      },
+    );
+  }
+}
+
+class _SearchLyricDialog extends ConsumerStatefulWidget {
+  final SongModel song;
+  const _SearchLyricDialog({required this.song});
+
+  @override
+  ConsumerState<_SearchLyricDialog> createState() => _SearchLyricDialogState();
+}
+
+class _SearchLyricDialogState extends ConsumerState<_SearchLyricDialog> {
+  final _titleController = TextEditingController();
+  final _artistController = TextEditingController();
+  List<Map<String, dynamic>> _results = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.song.title;
+    _artistController.text = widget.song.artist ?? '';
+  }
+
+  Future<void> _search() async {
+    setState(() => _isLoading = true);
+    final results = await ref.read(lyricProvider.notifier).searchOnline(
+      _titleController.text,
+      _artistController.text,
+    );
+    setState(() {
+      _results = results;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Search Lyrics on LRCLIB"),
+      content: SizedBox(
+        width: 400,
+        height: 500,
+        child: Column(
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: "Track Name"),
+            ),
+            TextField(
+              controller: _artistController,
+              decoration: const InputDecoration(labelText: "Artist Name"),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _search,
+              child: const Text("Search"),
+            ),
+            const SizedBox(height: 16),
+            if (_isLoading) const CircularProgressIndicator(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _results.length,
+                itemBuilder: (context, index) {
+                  final result = _results[index];
+                  final synced = result['syncedLyrics'];
+                  final hasSynced = synced != null && synced.toString().isNotEmpty;
+                  return ListTile(
+                    title: Text(result['trackName'] ?? 'Unknown'),
+                    subtitle: Text(
+                      "${result['artistName']} - ${result['albumName']}\n" +
+                      (hasSynced ? "✅ Synced Lyrics Available" : "❌ Plain Lyrics Only"),
+                    ),
+                    isThreeLine: true,
+                    onTap: () {
+                      if (hasSynced) {
+                        ref.read(lyricProvider.notifier).saveAndUseLyric(synced, widget.song.data);
+                        Navigator.pop(context);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("This track only has plain lyrics. Synced lyrics required.")),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
 }
