@@ -21,8 +21,6 @@ class AppLayout extends ConsumerStatefulWidget {
 
 class _AppLayoutState extends ConsumerState<AppLayout> {
   int _selectedIndex = 0;
-  bool _isShuffleActive = false;
-  int _repeatMode = 0;
   double? _dragPosition;
 
   final List<Widget> _screens = [
@@ -1047,12 +1045,10 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     children: [
                       _buildIconWithDot(
                         icon: Icons.shuffle_rounded,
-                        isActive: _isShuffleActive,
+                        isActive: state.isShuffle,
                         size: 28,
                         onTap: () {
-                          setState(() {
-                            _isShuffleActive = !_isShuffleActive;
-                          });
+                          ref.read(musicProvider.notifier).toggleShuffle();
                         },
                       ),
                       const SizedBox(width: 16),
@@ -1092,15 +1088,13 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                       ),
                       const SizedBox(width: 16),
                       _buildIconWithDot(
-                        icon: _repeatMode == 2
+                        icon: state.loopMode == LoopMode.one
                             ? Icons.repeat_one_rounded
                             : Icons.repeat_rounded,
-                        isActive: _repeatMode > 0,
+                        isActive: state.loopMode != LoopMode.off,
                         size: 28,
                         onTap: () {
-                          setState(() {
-                            _repeatMode = (_repeatMode + 1) % 3;
-                          });
+                          ref.read(musicProvider.notifier).toggleLoop();
                         },
                       ),
                     ],
