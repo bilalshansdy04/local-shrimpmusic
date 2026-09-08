@@ -702,77 +702,103 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         ),
         const Divider(height: 24, thickness: 1, color: Color(0xFFF0F0F0)),
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             itemCount: queue.length - queueIndex - 1,
+            onReorder: (oldIndex, newIndex) {
+              final absoluteOld = queueIndex + 1 + oldIndex;
+              final absoluteNew = queueIndex + 1 + newIndex;
+              ref.read(musicProvider.notifier).reorderQueue(absoluteOld, absoluteNew);
+            },
             itemBuilder: (context, index) {
-              final song = queue[queueIndex + 1 + index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
+              final absoluteIndex = queueIndex + 1 + index;
+              final song = queue[absoluteIndex];
+              return InkWell(
+                key: ValueKey(song.id.toString() + '_' + absoluteIndex.toString()),
+                onTap: () {
+                  ref.read(musicProvider.notifier).skipToQueueItem(absoluteIndex);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: ReorderableDragStartListener(
+                          index: index,
+                          child: Container(
+                            padding: const EdgeInsets.only(right: 8.0, left: 4.0),
+                            child: const Icon(
+                              Icons.drag_indicator_rounded,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final art = ref.watch(artworkProvider(song.data));
-                          return art.when(
-                            data: (bytes) {
-                              if (bytes != null) {
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    bytes,
-                                    fit: BoxFit.cover,
-                                    cacheWidth: 100,
-                                  ),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final art = ref.watch(artworkProvider(song.data));
+                            return art.when(
+                              data: (bytes) {
+                                if (bytes != null) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      bytes,
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 100,
+                                    ),
+                                  );
+                                }
+                                return const Icon(
+                                  Icons.music_note,
+                                  color: Colors.grey,
                                 );
-                              }
-                              return const Icon(
-                                Icons.music_note,
-                                color: Colors.grey,
-                              );
-                            },
-                            loading: () => const SizedBox(),
-                            error: (_, __) => const SizedBox(),
-                          );
-                        },
+                              },
+                              loading: () => const SizedBox(),
+                              error: (_, __) => const SizedBox(),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            song.title,
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              song.title,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 13,
+                            const SizedBox(height: 2),
+                            Text(
+                              "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

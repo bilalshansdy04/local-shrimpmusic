@@ -400,6 +400,44 @@ class MusicNotifier extends Notifier<MusicState> {
     await playSong(state.queue[nextIndex]);
   }
 
+  Future<void> skipToQueueItem(int index) async {
+    if (index < 0 || index >= state.queue.length) return;
+    // We want to skip to that song without modifying the queue.
+    // wait, playSong() will modify the queue if we pass contextList? No, if we just pass the song, it might play from queue if it matches?
+    // Actually, playSong() checks if it's already in the queue.
+    // Wait, playSong removes the song from the queue and inserts it at queueIndex + 1!
+    // We DON'T want that for skipping to an existing queue item!
+    // We just want to change queueIndex and open the player!
+    state = state.copyWith(queueIndex: index);
+    await _player.open(Media(state.queue[index].data));
+    if (state.isPlaying) {
+      await _player.play();
+    }
+  }
+
+  void reorderQueue(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= state.queue.length || newIndex < 0 || newIndex > state.queue.length) return;
+    
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    
+    final List<SongModel> newQueue = List.from(state.queue);
+    final SongModel item = newQueue.removeAt(oldIndex);
+    newQueue.insert(newIndex, item);
+    
+    int newQueueIndex = state.queueIndex;
+    if (oldIndex == state.queueIndex) {
+      newQueueIndex = newIndex;
+    } else if (oldIndex < state.queueIndex && newIndex >= state.queueIndex) {
+      newQueueIndex--;
+    } else if (oldIndex > state.queueIndex && newIndex <= state.queueIndex) {
+      newQueueIndex++;
+    }
+    
+    state = state.copyWith(queue: newQueue, queueIndex: newQueueIndex);
+  }
+
   Future<void> previous() async {
     if (state.queue.isEmpty) return;
 
