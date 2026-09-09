@@ -78,7 +78,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                       Align(
                         alignment: Alignment.topLeft,
                         child: IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 36),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 36,
+                          ),
                           color: const Color(0xFFFF4500),
                           onPressed: () => Navigator.pop(context),
                         ),
@@ -97,24 +100,37 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                                     color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 30,
                                     offset: const Offset(0, 15),
-                                  )
+                                  ),
                                 ],
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Consumer(
                                   builder: (context, ref, _) {
-                                    final art = ref.watch(artworkProvider(song.data));
+                                    final art = ref.watch(
+                                      artworkProvider(song.data),
+                                    );
                                     return art.when(
                                       data: (bytes) {
-                                        if (bytes != null) return Image.file(bytes, fit: BoxFit.cover);
+                                        if (bytes != null)
+                                          return Image.file(
+                                            bytes,
+                                            fit: BoxFit.cover,
+                                          );
                                         return Container(
                                           color: Colors.grey[300],
-                                          child: const Center(child: Icon(Icons.music_note, size: 100)),
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.music_note,
+                                              size: 100,
+                                            ),
+                                          ),
                                         );
                                       },
-                                      loading: () => Container(color: Colors.grey[300]),
-                                      error: (_, _) => Container(color: Colors.grey[300]),
+                                      loading: () =>
+                                          Container(color: Colors.grey[300]),
+                                      error: (_, _) =>
+                                          Container(color: Colors.grey[300]),
                                     );
                                   },
                                 ),
@@ -155,32 +171,54 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                           Text(
                             formatDuration(
                               _dragPosition != null
-                                  ? Duration(milliseconds: _dragPosition!.toInt())
+                                  ? Duration(
+                                      milliseconds: _dragPosition!.toInt(),
+                                    )
                                   : musicState.position,
                             ),
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: SliderTheme(
                               data: SliderThemeData(
                                 trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                                overlayShape: const RoundSliderOverlayShape(
+                                  overlayRadius: 16,
+                                ),
                                 activeTrackColor: const Color(0xFFFF4500),
                                 inactiveTrackColor: Colors.grey[300],
                                 thumbColor: const Color(0xFFFF4500),
-                                overlayColor: const Color(0xFFFF4500).withValues(alpha: 0.2),
+                                overlayColor: const Color(0xFFFF4500)
+                                    .withValues(alpha: 0.2),
                               ),
                               child: Slider(
-                                value: _dragPosition ?? musicState.position.inMilliseconds.toDouble(),
+                                value:
+                                    _dragPosition ??
+                                    musicState.position.inMilliseconds
+                                        .toDouble(),
                                 min: 0,
-                                max: musicState.duration.inMilliseconds.toDouble() > 0
-                                    ? musicState.duration.inMilliseconds.toDouble()
+                                max:
+                                    musicState.duration.inMilliseconds
+                                            .toDouble() >
+                                        0
+                                    ? musicState.duration.inMilliseconds
+                                          .toDouble()
                                     : 1.0,
-                                onChanged: (val) => setState(() => _dragPosition = val),
+                                onChanged: (val) =>
+                                    setState(() => _dragPosition = val),
                                 onChangeEnd: (val) {
-                                  ref.read(musicProvider.notifier).seek(Duration(milliseconds: val.toInt()));
+                                  ref
+                                      .read(musicProvider.notifier)
+                                      .seek(
+                                        Duration(milliseconds: val.toInt()),
+                                      );
                                   setState(() => _dragPosition = null);
                                 },
                               ),
@@ -189,7 +227,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                           const SizedBox(width: 16),
                           Text(
                             formatDuration(musicState.duration),
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -199,16 +240,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildIconWithDot(
-                            icon: Icons.queue_music_rounded,
-                            isActive: viewMode == PlayerViewMode.queue,
-                            onTap: () {
-                              final notif = ref.read(playerViewModeProvider.notifier);
-                              notif.setMode(viewMode == PlayerViewMode.queue
-                                  ? PlayerViewMode.playing
-                                  : PlayerViewMode.queue);
-                            },
-                          ),
+                          const SizedBox(width: 28),
                           Row(
                             children: [
                               _buildIconWithDot(
@@ -254,13 +286,13 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                             ],
                           ),
                           _buildIconWithDot(
-                            icon: Icons.mic_external_on_rounded,
-                            isActive: viewMode == PlayerViewMode.lyric,
+                            icon: Icons.queue_music_rounded,
+                            isActive: viewMode == PlayerViewMode.queue,
                             onTap: () {
                               final notif = ref.read(playerViewModeProvider.notifier);
-                              notif.setMode(viewMode == PlayerViewMode.lyric
-                                  ? PlayerViewMode.playing
-                                  : PlayerViewMode.lyric);
+                              notif.setMode(viewMode == PlayerViewMode.queue
+                                  ? PlayerViewMode.lyric
+                                  : PlayerViewMode.queue);
                             },
                           ),
                         ],
@@ -274,20 +306,11 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
               // Right side (Lyrics or Queue)
               Expanded(
                 flex: 1,
-                child: (viewMode == PlayerViewMode.lyric && song != null)
-                    ? LyricPaneView(song: song)
-                    : (viewMode == PlayerViewMode.queue)
-                        ? const QueuePaneView()
-                        : const Center(
-                            child: Text(
-                              "LIRIK dan QUEUE DISINI",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ),
+                child: viewMode == PlayerViewMode.queue
+                    ? const QueuePaneView()
+                    : song != null
+                        ? LyricPaneView(song: song)
+                        : const SizedBox(),
               ),
             ],
           ),
