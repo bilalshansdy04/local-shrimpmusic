@@ -605,117 +605,8 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 
-  final ScrollController _lyricScrollController = ScrollController();
-  int _lastLyricIndex = -1;
-
   Widget _buildLyricPaneView(SongModel song) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final lyricState = ref.watch(lyricProvider);
-        final position = ref.watch(musicProvider).position;
-
-        if (lyricState.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (lyricState.lyrics == null || lyricState.lyrics!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lyrics_outlined, size: 48, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  lyricState.error != null
-                      ? "Error: ${lyricState.error}"
-                      : "Lyrics not found locally",
-                  style: const TextStyle(color: Colors.grey, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _showSearchLyricModal(context, ref, song);
-                  },
-                  icon: const Icon(Icons.search),
-                  label: const Text("Search Online (LRCLIB)"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () {
-                    // TODO: Open Create/Paste Modal
-                  },
-                  icon: const Icon(Icons.edit, color: Colors.black),
-                  label: const Text(
-                    "Create or Paste Lyrics",
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final lyrics = lyricState.lyrics!;
-        int currentIndex = lyrics.indexWhere((l) => l.time > position) - 1;
-        if (currentIndex < -1) currentIndex = lyrics.length - 1;
-        if (currentIndex < 0) currentIndex = 0;
-
-        // Auto-scroll
-        if (currentIndex != _lastLyricIndex &&
-            _lyricScrollController.hasClients) {
-          _lastLyricIndex = currentIndex;
-          // Approximate height per item: 50px
-          final double offset =
-              (currentIndex * 50.0) -
-              (MediaQuery.of(context).size.height / 2) +
-              25.0;
-          if (offset > 0) {
-            _lyricScrollController.animateTo(
-              offset,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          } else {
-            _lyricScrollController.animateTo(
-              0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        }
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: ListView.builder(
-            controller: _lyricScrollController,
-            padding: const EdgeInsets.symmetric(
-              vertical: 200.0,
-            ), // Padding to allow scrolling past ends
-            itemCount: lyrics.length,
-            itemBuilder: (context, index) {
-              final isCurrent = index == currentIndex;
-              return Container(
-                height: 50.0,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  lyrics[index].text,
-                  style: TextStyle(
-                    color: isCurrent ? Colors.black : Colors.grey[400],
-                    fontSize: isCurrent ? 26 : 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
+    return _LyricPaneView(song: song);
   }
 
   Widget _buildQueuePaneView(List<SongModel> queue, int queueIndex) {
@@ -1547,23 +1438,25 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
         SingleChildScrollView(
           padding: EdgeInsets.symmetric(
             horizontal: 24.0,
-            vertical: isSynced ? MediaQuery.of(context).size.height / 2.5 : 24.0,
+            vertical: MediaQuery.of(context).size.height / 2.2, // Huge padding to allow anything to center
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: List.generate(lyrics.length, (index) {
-              final isCurrent = isSynced ? index == currentIndex : true; // all active if unsynced
-              return Padding(
+              final isCurrent = isSynced ? index == currentIndex : true;
+              return Container(
                 key: _keys[index],
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  lyrics[index].text,
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                width: double.infinity,
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
                   style: TextStyle(
-                    color: isCurrent ? Colors.black : Colors.grey[400],
-                    fontSize: isCurrent ? 28 : 24,
+                    color: isSynced ? (isCurrent ? Colors.black : Colors.grey[400]) : Colors.black87,
+                    fontSize: isSynced ? (isCurrent ? 36 : 20) : 24,
                     fontWeight: isSynced && isCurrent ? FontWeight.w900 : FontWeight.w700,
-                    height: 1.3,
+                    height: 1.4,
                   ),
+                  child: Text(lyrics[index].text),
                 ),
               );
             }),
