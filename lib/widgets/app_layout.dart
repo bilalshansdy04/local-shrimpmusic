@@ -1468,9 +1468,10 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
   @override
   Widget build(BuildContext context) {
     final lyricState = ref.watch(lyricProvider);
+    final isSynced = lyricState.isSynced;
     // Use select to only rebuild when the index actually changes
     final currentIndex = ref.watch(musicProvider.select((m) {
-      if (lyricState.lyrics == null || lyricState.lyrics!.isEmpty) return 0;
+      if (!isSynced || lyricState.lyrics == null || lyricState.lyrics!.isEmpty) return -1;
       int idx = lyricState.lyrics!.indexWhere((l) => l.time > m.position) - 1;
       if (idx < -1) idx = lyricState.lyrics!.length - 1;
       if (idx < 0) idx = 0;
@@ -1534,7 +1535,7 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
     }
 
     // Trigger scroll if index changed
-    if (currentIndex != _lastIndex) {
+    if (isSynced && currentIndex != _lastIndex && currentIndex != -1) {
       _lastIndex = currentIndex;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToIndex(currentIndex);
@@ -1546,12 +1547,12 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
         SingleChildScrollView(
           padding: EdgeInsets.symmetric(
             horizontal: 24.0,
-            vertical: MediaQuery.of(context).size.height / 2.5,
+            vertical: isSynced ? MediaQuery.of(context).size.height / 2.5 : 24.0,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: List.generate(lyrics.length, (index) {
-              final isCurrent = index == currentIndex;
+              final isCurrent = isSynced ? index == currentIndex : true; // all active if unsynced
               return Padding(
                 key: _keys[index],
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1559,8 +1560,8 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
                   lyrics[index].text,
                   style: TextStyle(
                     color: isCurrent ? Colors.black : Colors.grey[400],
-                    fontSize: isCurrent ? 32 : 24,
-                    fontWeight: FontWeight.w700,
+                    fontSize: isCurrent ? 28 : 24,
+                    fontWeight: isSynced && isCurrent ? FontWeight.w900 : FontWeight.w700,
                     height: 1.3,
                   ),
                 ),
@@ -1569,35 +1570,36 @@ class _LyricPaneViewState extends ConsumerState<_LyricPaneView> {
           ),
         ),
         
-        // Sync Toggle Button
-        Positioned(
-          top: 16,
-          right: 24,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-              ],
-            ),
-            child: IconButton(
-              icon: Icon(
-                _isAutoSync ? Icons.sync : Icons.sync_disabled,
-                color: _isAutoSync ? Colors.black : Colors.grey,
+        // Sync Toggle Button (Only show if lyrics are actually synced)
+        if (isSynced)
+          Positioned(
+            top: 16,
+            right: 24,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+                ],
               ),
-              tooltip: _isAutoSync ? "Auto-sync enabled" : "Auto-sync disabled",
-              onPressed: () {
-                setState(() {
-                  _isAutoSync = !_isAutoSync;
-                  if (_isAutoSync) {
-                    _scrollToIndex(currentIndex);
-                  }
-                });
-              },
+              child: IconButton(
+                icon: Icon(
+                  _isAutoSync ? Icons.sync : Icons.sync_disabled,
+                  color: _isAutoSync ? Colors.black : Colors.grey,
+                ),
+                tooltip: _isAutoSync ? "Auto-sync enabled" : "Auto-sync disabled",
+                onPressed: () {
+                  setState(() {
+                    _isAutoSync = !_isAutoSync;
+                    if (_isAutoSync && currentIndex != -1) {
+                      _scrollToIndex(currentIndex);
+                    }
+                  });
+                },
+              ),
             ),
           ),
-        ),
       ],
     );
   }

@@ -12,12 +12,14 @@ import 'music_provider.dart';
 
 class LyricState {
   final List<LyricLine>? lyrics;
+  final bool isSynced;
   final bool isLoading;
   final bool isSearching;
   final String? error;
 
   LyricState({
     this.lyrics,
+    this.isSynced = true,
     this.isLoading = false,
     this.isSearching = false,
     this.error,
@@ -25,12 +27,14 @@ class LyricState {
 
   LyricState copyWith({
     List<LyricLine>? lyrics,
+    bool? isSynced,
     bool? isLoading,
     bool? isSearching,
     String? error,
   }) {
     return LyricState(
       lyrics: lyrics ?? this.lyrics,
+      isSynced: isSynced ?? this.isSynced,
       isLoading: isLoading ?? this.isLoading,
       isSearching: isSearching ?? this.isSearching,
       error: error ?? this.error,
@@ -94,12 +98,12 @@ class LyricNotifier extends Notifier<LyricState> {
             for (int i = 0; i < split.length; i++) {
               plainLines.add(
                 LyricLine(
-                  time: Duration(milliseconds: i),
+                  time: Duration.zero,
                   text: split[i].trim(),
                 ),
               );
             }
-            state = LyricState(lyrics: plainLines);
+            state = LyricState(lyrics: plainLines, isSynced: false);
             return;
           }
         }
