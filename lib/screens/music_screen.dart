@@ -53,9 +53,11 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                   const Spacer(flex: 1),
                   // Album Art
                   if (song != null)
-                    AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
+                    Flexible(
+                      flex: 8,
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
                         decoration: BoxDecoration(
                           boxShadow: [
                             BoxShadow(
@@ -83,6 +85,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                         ),
                       ),
                     ),
+  ),
                   const SizedBox(height: 48),
                   // Title & Artist
                   Text(
