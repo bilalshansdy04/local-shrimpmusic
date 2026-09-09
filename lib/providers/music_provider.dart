@@ -157,7 +157,7 @@ class MusicNotifier extends Notifier<MusicState> {
       if (audioTracks.isNotEmpty) {
         final track = audioTracks.first;
         if (track.bitrate != null) {
-           state = state.copyWith(currentBitrate: track.bitrate);
+          state = state.copyWith(currentBitrate: track.bitrate);
         }
       }
     });
@@ -197,7 +197,7 @@ class MusicNotifier extends Notifier<MusicState> {
         final targetPath =
             customPath ??
             (Platform.environment['USERPROFILE'] != null
-                ? "${Platform.environment['USERPROFILE']}\Music"
+                ? "${Platform.environment['USERPROFILE']}Music"
                 : "");
         if (targetPath.isNotEmpty) {
           final dir = Directory(targetPath);
@@ -232,14 +232,18 @@ class MusicNotifier extends Notifier<MusicState> {
 
                 try {
                   final metadata = readMetadata(file, getImage: false);
-                  if (metadata.title != null && metadata.title!.isNotEmpty)
+                  if (metadata.title != null && metadata.title!.isNotEmpty) {
                     title = metadata.title!;
-                  if (metadata.artist != null && metadata.artist!.isNotEmpty)
+                  }
+                  if (metadata.artist != null && metadata.artist!.isNotEmpty) {
                     artist = metadata.artist!;
-                  if (metadata.album != null && metadata.album!.isNotEmpty)
+                  }
+                  if (metadata.album != null && metadata.album!.isNotEmpty) {
                     album = metadata.album!;
-                  if (metadata.duration != null)
+                  }
+                  if (metadata.duration != null) {
                     durationMs = metadata.duration!.inMilliseconds;
+                  }
                   print('Read bitrate for $title: ${metadata.bitrate}');
                 } catch (e) {}
 
@@ -256,7 +260,8 @@ class MusicNotifier extends Notifier<MusicState> {
                   'artist_id': 0,
                   'title': title,
                   'duration': durationMs,
-                  'date_added': file.lastModifiedSync().millisecondsSinceEpoch ~/ 1000,
+                  'date_added':
+                      file.lastModifiedSync().millisecondsSinceEpoch ~/ 1000,
                 });
               }
               return results;
@@ -310,7 +315,7 @@ class MusicNotifier extends Notifier<MusicState> {
     if (newRecentlyPlayed.length > 15) {
       newRecentlyPlayed = newRecentlyPlayed.sublist(0, 15);
     }
-    
+
     // Save to SharedPreferences
     SharedPreferences.getInstance().then((prefs) {
       final ids = newRecentlyPlayed.map((s) => s.id.toString()).toList();
@@ -402,9 +407,9 @@ class MusicNotifier extends Notifier<MusicState> {
 
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 || index >= state.queue.length) return;
-    
+
     final song = state.queue[index];
-    
+
     // Update recently played
     List<SongModel> newRecentlyPlayed = List.from(state.recentlyPlayed);
     newRecentlyPlayed.removeWhere((s) => s.id == song.id);
@@ -418,43 +423,48 @@ class MusicNotifier extends Notifier<MusicState> {
     });
 
     state = state.copyWith(
-      queueIndex: index, 
+      queueIndex: index,
       currentSong: song,
       recentlyPlayed: newRecentlyPlayed,
     );
-    
+
     await _player.open(Media(song.data));
     if (state.isPlaying) {
       await _player.play();
     }
   }
-  
+
   void removeFromQueue(int index) {
     if (index < 0 || index >= state.queue.length) return;
-    if (index == state.queueIndex) return; // Cannot remove currently playing song via swipe
-    
+    if (index == state.queueIndex)
+      return; // Cannot remove currently playing song via swipe
+
     final List<SongModel> newQueue = List.from(state.queue);
     newQueue.removeAt(index);
-    
+
     int newQueueIndex = state.queueIndex;
     if (index < state.queueIndex) {
       newQueueIndex--;
     }
-    
+
     state = state.copyWith(queue: newQueue, queueIndex: newQueueIndex);
   }
 
   void reorderQueue(int oldIndex, int newIndex) {
-    if (oldIndex < 0 || oldIndex >= state.queue.length || newIndex < 0 || newIndex > state.queue.length) return;
-    
+    if (oldIndex < 0 ||
+        oldIndex >= state.queue.length ||
+        newIndex < 0 ||
+        newIndex > state.queue.length)
+      return;
+
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
-    
+
     final List<SongModel> newQueue = List.from(state.queue);
     final SongModel item = newQueue.removeAt(oldIndex);
     newQueue.insert(newIndex, item);
-    
+
     int newQueueIndex = state.queueIndex;
     if (oldIndex == state.queueIndex) {
       newQueueIndex = newIndex;
@@ -463,7 +473,7 @@ class MusicNotifier extends Notifier<MusicState> {
     } else if (oldIndex > state.queueIndex && newIndex <= state.queueIndex) {
       newQueueIndex++;
     }
-    
+
     state = state.copyWith(queue: newQueue, queueIndex: newQueueIndex);
   }
 

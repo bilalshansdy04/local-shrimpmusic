@@ -1,6 +1,5 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
-import "package:on_audio_query/on_audio_query.dart";
 
 import "../providers/ui_provider.dart";
 import "../providers/music_provider.dart";
@@ -175,22 +174,37 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
             ),
             child: Slider(
               value: (_dragPosition ?? state.position.inMilliseconds.toDouble())
-                  .clamp(0.0, state.duration.inMilliseconds.toDouble() > 0 ? state.duration.inMilliseconds.toDouble() : 1.0),
+                  .clamp(
+                    0.0,
+                    state.duration.inMilliseconds.toDouble() > 0
+                        ? state.duration.inMilliseconds.toDouble()
+                        : 1.0,
+                  ),
               max: state.duration.inMilliseconds.toDouble() > 0
                   ? state.duration.inMilliseconds.toDouble()
                   : 1.0,
               onChangeStart: (v) {
-                setState(() { _dragPosition = v; });
+                setState(() {
+                  _dragPosition = v;
+                });
               },
               onChanged: (v) {
-                setState(() { _dragPosition = v; });
+                setState(() {
+                  _dragPosition = v;
+                });
               },
               onChangeEnd: (v) async {
                 final target = v;
-                setState(() { _dragPosition = v; });
-                await ref.read(musicProvider.notifier).seek(Duration(milliseconds: v.toInt()));
+                setState(() {
+                  _dragPosition = v;
+                });
+                await ref
+                    .read(musicProvider.notifier)
+                    .seek(Duration(milliseconds: v.toInt()));
                 if (mounted && _dragPosition == target) {
-                  setState(() { _dragPosition = null; });
+                  setState(() {
+                    _dragPosition = null;
+                  });
                 }
               },
             ),
@@ -201,7 +215,11 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  formatDuration(_dragPosition != null ? Duration(milliseconds: _dragPosition!.toInt()) : state.position),
+                  formatDuration(
+                    _dragPosition != null
+                        ? Duration(milliseconds: _dragPosition!.toInt())
+                        : state.position,
+                  ),
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,

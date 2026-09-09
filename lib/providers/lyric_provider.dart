@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+
 import '../models/lyric_model.dart';
-import 'package:on_audio_query/on_audio_query.dart';
+
 import 'package:audiotags/audiotags.dart';
+
 import 'music_provider.dart';
 
 class LyricState {
@@ -12,14 +15,14 @@ class LyricState {
   final bool isLoading;
   final bool isSearching;
   final String? error;
-  
+
   LyricState({
     this.lyrics,
     this.isLoading = false,
     this.isSearching = false,
     this.error,
   });
-  
+
   LyricState copyWith({
     List<LyricLine>? lyrics,
     bool? isLoading,
@@ -41,11 +44,13 @@ class LyricNotifier extends Notifier<LyricState> {
     _init();
     return LyricState();
   }
+
   String? _currentSongPath;
 
   void _init() {
     ref.listen(musicProvider, (previous, next) {
-      if (next.currentSong != null && next.currentSong!.data != _currentSongPath) {
+      if (next.currentSong != null &&
+          next.currentSong!.data != _currentSongPath) {
         _currentSongPath = next.currentSong!.data;
         _loadLocalLyrics(_currentSongPath!);
       }
@@ -60,10 +65,10 @@ class LyricNotifier extends Notifier<LyricState> {
       final basename = audioPath.split(Platform.pathSeparator).last;
       final lastDot = basename.lastIndexOf('.');
       final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
-      
+
       final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
       print("Looking for LRC file at: ${lrcFile.path}");
-      
+
       if (await lrcFile.exists()) {
         final content = await lrcFile.readAsString();
         final parsed = _parseLrc(content);
@@ -72,7 +77,7 @@ class LyricNotifier extends Notifier<LyricState> {
           return;
         }
       }
-      
+
       // Try embedded lyrics
       try {
         final tag = await AudioTags.read(audioPath);
@@ -87,7 +92,12 @@ class LyricNotifier extends Notifier<LyricState> {
             final List<LyricLine> plainLines = [];
             final split = embeddedLyricsStr.split('\n');
             for (int i = 0; i < split.length; i++) {
-              plainLines.add(LyricLine(time: Duration(milliseconds: i), text: split[i].trim()));
+              plainLines.add(
+                LyricLine(
+                  time: Duration(milliseconds: i),
+                  text: split[i].trim(),
+                ),
+              );
             }
             state = LyricState(lyrics: plainLines);
             return;
@@ -96,7 +106,7 @@ class LyricNotifier extends Notifier<LyricState> {
       } catch (e) {
         print('Error reading embedded lyrics: $e');
       }
-      
+
       state = LyricState(lyrics: null); // Not found locally or embedded
     } catch (e) {
       state = LyricState(error: e.toString());
@@ -106,33 +116,35 @@ class LyricNotifier extends Notifier<LyricState> {
   List<LyricLine> _parseLrc(String lrc) {
     final List<LyricLine> lines = [];
     final regex = RegExp(r'\[(\d+):(\d+(?:\.\d+)?)\](.*)');
-    
+
     for (final line in lrc.split('\n')) {
       final match = regex.firstMatch(line);
       if (match != null) {
         final minutes = int.parse(match.group(1)!);
         final seconds = double.parse(match.group(2)!);
         final text = match.group(3)!.trim();
-        
+
         final duration = Duration(
           milliseconds: (minutes * 60000 + seconds * 1000).toInt(),
         );
-        
+
         lines.add(LyricLine(time: duration, text: text));
       }
     }
-    
+
     return lines;
   }
 
-  Future<List<Map<String, dynamic>>> searchOnline(String trackName, String artistName) async {
+  Future<List<Map<String, dynamic>>> searchOnline(
+    String trackName,
+    String artistName,
+  ) async {
     state = state.copyWith(isSearching: true);
     try {
-      final uri = Uri.parse('https://lrclib.net/api/search').replace(queryParameters: {
-        'track_name': trackName,
-        'artist_name': artistName,
-      });
-      
+      final uri = Uri.parse('https://lrclib.net/api/search').replace(
+        queryParameters: {'track_name': trackName, 'artist_name': artistName},
+      );
+
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -153,11 +165,11 @@ class LyricNotifier extends Notifier<LyricState> {
       final basename = audioPath.split(Platform.pathSeparator).last;
       final lastDot = basename.lastIndexOf('.');
       final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
-      
+
       final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
       print("Looking for LRC file at: ${lrcFile.path}");
       await lrcFile.writeAsString(syncedLyrics);
-      
+
       final parsed = _parseLrc(syncedLyrics);
       state = LyricState(lyrics: parsed);
     } catch (e) {

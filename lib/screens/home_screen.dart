@@ -59,10 +59,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                top: 48.0,
-                bottom: 180.0,
-              ),
+              padding: const EdgeInsets.only(top: 48.0, bottom: 180.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -82,7 +79,11 @@ class HomeScreen extends ConsumerWidget {
 
                   _buildGrid(
                     title: "Recently Added",
-                    songs: List.from(musicState.allSongs)..sort((a, b) => (b.dateAdded ?? 0).compareTo(a.dateAdded ?? 0)),
+                    songs: List.from(musicState.allSongs)
+                      ..sort(
+                        (a, b) =>
+                            (b.dateAdded ?? 0).compareTo(a.dateAdded ?? 0),
+                      ),
                     ref: ref,
                   ),
                   const SizedBox(height: 32),
@@ -104,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
     required WidgetRef ref,
   }) {
     final displaySongs = songs.take(10).toList();
-    
+
     if (displaySongs.isEmpty) {
       return const SizedBox();
     }
@@ -140,7 +141,9 @@ class HomeScreen extends ConsumerWidget {
               final song = displaySongs[index];
               return InkWell(
                 onTap: () {
-                  ref.read(musicProvider.notifier).playSong(song, contextList: displaySongs);
+                  ref
+                      .read(musicProvider.notifier)
+                      .playSong(song, contextList: displaySongs);
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Column(
@@ -168,10 +171,7 @@ class HomeScreen extends ConsumerWidget {
                                 if (bytes != null) {
                                   return ClipRRect(
                                     borderRadius: BorderRadius.circular(16),
-                                    child: Image.file(
-                                      bytes,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    child: Image.file(bytes, fit: BoxFit.cover),
                                   );
                                 }
                                 return const Icon(
@@ -181,9 +181,11 @@ class HomeScreen extends ConsumerWidget {
                                 );
                               },
                               loading: () => const Center(
-                                child: CircularProgressIndicator(color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
                               ),
-                              error: (_, __) => const Icon(
+                              error: (_, _) => const Icon(
                                 Icons.music_note_rounded,
                                 color: Colors.white,
                                 size: 48,
