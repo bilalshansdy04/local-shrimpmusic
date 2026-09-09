@@ -72,7 +72,9 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     padding: const EdgeInsets.only(
                       bottom: 150.0,
                     ), // Always reserve space for player
-                    child: _screens[_selectedIndex],
+                    child: viewMode == PlayerViewMode.lyric && displaySong != null
+                        ? _LyricPaneView(song: displaySong)
+                        : _screens[_selectedIndex],
                   ),
                 ),
 
@@ -389,9 +391,8 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
   ) {
     switch (mode) {
       case PlayerViewMode.playing:
-        return _buildPlayingPaneView(song, nextSong);
       case PlayerViewMode.lyric:
-        return _buildLyricPaneView(song);
+        return _buildPlayingPaneView(song, nextSong);
       case PlayerViewMode.queue:
         return _buildQueuePaneView(queue, queueIndex);
       case PlayerViewMode.closed:
@@ -603,10 +604,6 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
         ],
       ),
     );
-  }
-
-  Widget _buildLyricPaneView(SongModel song) {
-    return _LyricPaneView(song: song);
   }
 
   Widget _buildQueuePaneView(List<SongModel> queue, int queueIndex) {
