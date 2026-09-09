@@ -1,5 +1,5 @@
-import 'queue_pane_view.dart';
 import 'lyric_pane_view.dart';
+import 'queue_pane_view.dart';
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
@@ -608,59 +608,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 
-                                  return const Icon(
-                                    Icons.music_note,
-                                    color: Colors.grey,
-                                  );
-                                },
-                                loading: () => const SizedBox(),
-                                error: (_, _) => const SizedBox(),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                song.title,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "${song.artist ?? 'Unknown'} • ${song.album ?? 'Unknown'}",
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 13,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Jarak tambahan di sisi kanan agar titik-titik overflow tidak mentok ke ujung layar.
-                        // Kamu bisa mengubah angka 16 ini menjadi lebih besar (misal: 32) jika ingin titik-titiknya lebih ke kiri lagi!
-                        const SizedBox(width: 32),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildIconWithDot({
     required IconData icon,
@@ -1067,22 +1015,6 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     );
   }
 
-  void _showSearchLyricModal(
-    BuildContext context,
-    WidgetRef ref,
-    SongModel song,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return _SearchLyricDialog(song: song);
-      },
-    );
-  }
+
 }
-
-
-
-
-
 
