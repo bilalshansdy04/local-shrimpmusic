@@ -12,7 +12,6 @@ import "../screens/library_screen.dart";
 import "../screens/playlists_screen.dart";
 import "../screens/settings_screen.dart";
 import "../providers/music_provider.dart";
-import "../providers/lyric_provider.dart";
 import "../providers/ui_provider.dart";
 
 class AppLayout extends ConsumerStatefulWidget {

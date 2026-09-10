@@ -1,6 +1,7 @@
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
-import "package:media_kit/media_kit.dart";
+import "package:media_kit/media_kit.dart" hide Playlist;
+import "package:file_picker/file_picker.dart";
 
 import "dart:convert";
 import "dart:io";
@@ -9,7 +10,8 @@ import "dart:isolate";
 import "package:path_provider/path_provider.dart";
 import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
-import "package:file_picker/file_picker.dart";
+import '../models/playlist.dart';
+
 
 final artworkProvider = FutureProvider.family<File?, String>((
   ref,
@@ -74,6 +76,9 @@ class MusicState {
   final List<SongModel> recentlyPlayed;
   final List<SongModel> favoriteSongs;
 
+  // New playlist state
+  final List<Playlist> playlists;
+
   MusicState({
     this.allSongs = const [],
     this.queue = const [],
@@ -91,7 +96,9 @@ class MusicState {
     this.currentBitrate,
     this.recentlyPlayed = const [],
     this.favoriteSongs = const [],
+    this.playlists = const [],
   });
+
 
   MusicState copyWith({
     List<SongModel>? allSongs,
@@ -110,6 +117,7 @@ class MusicState {
     int? currentBitrate,
     List<SongModel>? recentlyPlayed,
     List<SongModel>? favoriteSongs,
+    List<Playlist>? playlists,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -128,6 +136,7 @@ class MusicState {
       currentBitrate: currentBitrate ?? this.currentBitrate,
       recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
       favoriteSongs: favoriteSongs ?? this.favoriteSongs,
+      playlists: playlists ?? this.playlists,
     );
   }
 }
@@ -302,6 +311,16 @@ class MusicNotifier extends Notifier<MusicState> {
               .where((s) => favoriteSet.contains(s.id.toString()))
               .toList();
           state = state.copyWith(favoriteSongs: favoriteSongs);
+        } catch (e) {}
+      }
+
+      // Load playlists from prefs
+      final playlistsJson = prefs.getString('playlists');
+      if (playlistsJson != null) {
+        try {
+          final List<dynamic> playlistsList = jsonDecode(playlistsJson);
+          final playlists = playlistsList.map((p) => Playlist.fromJson(p)).toList();
+          state = state.copyWith(playlists: playlists);
         } catch (e) {}
       }
     } else {
@@ -559,12 +578,9 @@ class MusicNotifier extends Notifier<MusicState> {
     final existingIndex = newFavorite.indexWhere((s) => s.id == song.id);
 
     if (existingIndex != -1) {
-      // Remove from favorites
       newFavorite.removeAt(existingIndex);
     } else {
-      // Add to favorites (add to beginning)
       newFavorite.insert(0, song);
-      // Keep only last 50 favorites to avoid memory issues
       if (newFavorite.length > 50) {
         newFavorite = newFavorite.sublist(0, 50);
       }
@@ -572,11 +588,54 @@ class MusicNotifier extends Notifier<MusicState> {
 
     state = state.copyWith(favoriteSongs: newFavorite);
 
-    // Persist favorite IDs to SharedPreferences
     SharedPreferences.getInstance().then((prefs) {
       final ids = newFavorite.map((s) => s.id.toString()).toList();
       prefs.setString('favorite_song_ids', jsonEncode(ids));
     });
+  }
+
+  Future<void> createPlaylist(String name) async {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final newPlaylist = Playlist(id: id, name: name);
+    final newPlaylists = List<Playlist>.from(state.playlists)..add(newPlaylist);
+    state = state.copyWith(playlists: newPlaylists);
+    await _savePlaylists(newPlaylists);
+  }
+
+  Future<void> addSongToPlaylist(String playlistId, SongModel song) async {
+    final newPlaylists = state.playlists.map((pl) {
+      if (pl.id == playlistId) {
+        final newIds = List<int>.from(pl.songIds)..add(song.id);
+        return Playlist(id: pl.id, name: pl.name, songIds: newIds);
+      }
+      return pl;
+    }).toList();
+    state = state.copyWith(playlists: newPlaylists);
+    await _savePlaylists(newPlaylists);
+  }
+
+  Future<void> removeSongFromPlaylist(String playlistId, SongModel song) async {
+    final newPlaylists = state.playlists.map((pl) {
+      if (pl.id == playlistId) {
+        final newIds = List<int>.from(pl.songIds)..remove(song.id);
+        return Playlist(id: pl.id, name: pl.name, songIds: newIds);
+      }
+      return pl;
+    }).toList();
+    state = state.copyWith(playlists: newPlaylists);
+    await _savePlaylists(newPlaylists);
+  }
+
+  Future<void> deletePlaylist(String playlistId) async {
+    final newPlaylists = state.playlists.where((pl) => pl.id != playlistId).toList();
+    state = state.copyWith(playlists: newPlaylists);
+    await _savePlaylists(newPlaylists);
+  }
+
+  Future<void> _savePlaylists(List<Playlist> playlists) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(playlists.map((p) => p.toJson()).toList());
+    prefs.setString('playlists', jsonString);
   }
 
   Future<void> addToQueue(SongModel song) async {
