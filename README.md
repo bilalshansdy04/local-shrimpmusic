@@ -4,19 +4,29 @@ Pemutar musik lokal yang ringan, cepat, dan offline-first untuk Windows.
 
 Tanpa login. Tanpa iklan. Tanpa upload. Buka aplikasi, pilih folder musik, langsung putar.
 
-## Download
+### [Download](https://github.com/bilalshansdy04/local-shrimpmusic/releases/latest)
 
-**Windows 64-bit — v1.0.0 (rilis awal):**
+### Opsi 1: MSIX (disarankan, install rapi)
 
-[Download ShrimpMusic](https://github.com/bilalshansdy04/local-shrimpmusic/releases/latest)
+Pilih file `ShrimpMusic.msix`.
 
-> File bernama `ShrimpMusic-v1.0.0-windows-x64.zip` di halaman Releases. Jika link di atas membuka daftar rilis, pilih file ZIP paling baru.
+1. Download `ShrimpMusic.msix`.
+2. Double-click file, klik **Install**.
+3. Buka dari Start Menu. Uninstall via **Settings > Apps**.
 
-### Cara install (3 langkah)
+Cocok bila mau install sekali, update via file baru, tanpa atur folder manual.
 
-1. Download file ZIP dari link di atas.
-2. Klik kanan file ZIP > **Extract All**, simpan di folder bebas, misal `Documents`.
-3. Buka folder hasil extract, jalankan `ShrimpMusic.exe`. Tidak perlu admin, tidak perlu installer.
+### Opsi 2: ZIP portable (tanpa install)
+
+Pilih file `ShrimpMusic-v1.0.0-windows-x64.zip`.
+
+1. Download file ZIP.
+2. Klik kanan > **Extract All**, simpan misal di `Documents`.
+3. Jalankan `ShrimpMusic.exe` dari folder hasil extract.
+
+Cocok bila mau coba cepat, bawa di flashdisk, atau tanpa hak install.
+
+> MSIX terdaftar di Apps, ZIP tidak. Keduanya butuh Windows 64-bit.
 
 ## Kenapa ShrimpMusic
 
