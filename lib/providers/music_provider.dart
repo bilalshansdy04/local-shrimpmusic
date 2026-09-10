@@ -72,6 +72,7 @@ class MusicState {
   final String? musicFolderPath;
   final int? currentBitrate;
   final List<SongModel> recentlyPlayed;
+  final List<SongModel> favoriteSongs;
 
   MusicState({
     this.allSongs = const [],
@@ -89,6 +90,7 @@ class MusicState {
     this.musicFolderPath,
     this.currentBitrate,
     this.recentlyPlayed = const [],
+    this.favoriteSongs = const [],
   });
 
   MusicState copyWith({
@@ -107,6 +109,7 @@ class MusicState {
     String? musicFolderPath,
     int? currentBitrate,
     List<SongModel>? recentlyPlayed,
+    List<SongModel>? favoriteSongs,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -124,6 +127,7 @@ class MusicState {
       musicFolderPath: musicFolderPath ?? this.musicFolderPath,
       currentBitrate: currentBitrate ?? this.currentBitrate,
       recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
+      favoriteSongs: favoriteSongs ?? this.favoriteSongs,
     );
   }
 }
@@ -287,6 +291,19 @@ class MusicNotifier extends Notifier<MusicState> {
         hasPermission: true,
         isLoading: false,
       );
+
+      // Load favorite songs from prefs
+      final favoriteIdsJson = prefs.getString('favorite_song_ids');
+      if (favoriteIdsJson != null) {
+        try {
+          final List<dynamic> favoriteIds = jsonDecode(favoriteIdsJson);
+          final favoriteSet = favoriteIds.map((id) => id.toString()).toSet();
+          final favoriteSongs = songs
+              .where((s) => favoriteSet.contains(s.id.toString()))
+              .toList();
+          state = state.copyWith(favoriteSongs: favoriteSongs);
+        } catch (e) {}
+      }
     } else {
       state = state.copyWith(hasPermission: false, isLoading: false);
     }
@@ -535,6 +552,53 @@ class MusicNotifier extends Notifier<MusicState> {
         break;
     }
     state = state.copyWith(loopMode: nextMode);
+  }
+
+  void toggleFavorite(SongModel song) {
+    List<SongModel> newFavorite = List<SongModel>.from(state.favoriteSongs);
+    final existingIndex = newFavorite.indexWhere((s) => s.id == song.id);
+
+    if (existingIndex != -1) {
+      // Remove from favorites
+      newFavorite.removeAt(existingIndex);
+    } else {
+      // Add to favorites (add to beginning)
+      newFavorite.insert(0, song);
+      // Keep only last 50 favorites to avoid memory issues
+      if (newFavorite.length > 50) {
+        newFavorite = newFavorite.sublist(0, 50);
+      }
+    }
+
+    state = state.copyWith(favoriteSongs: newFavorite);
+
+    // Persist favorite IDs to SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      final ids = newFavorite.map((s) => s.id.toString()).toList();
+      prefs.setString('favorite_song_ids', jsonEncode(ids));
+    });
+  }
+
+  Future<void> addToQueue(SongModel song) async {
+    if (state.queue.isEmpty) {
+      // No current queue; start playing this song
+      await playSong(song, contextList: state.allSongs);
+      return;
+    }
+
+    final newQueue = List<SongModel>.from(state.queue);
+    final existingIndex = newQueue.indexWhere((s) => s.id == song.id);
+
+    if (existingIndex != -1) {
+      // Song already in queue; keep it, nothing to do
+      return;
+    }
+
+    // Insert after currently playing song for "play next" feel
+    final insertIndex = state.queueIndex + 1;
+    newQueue.insert(insertIndex < newQueue.length ? insertIndex : newQueue.length, song);
+
+    state = state.copyWith(queue: newQueue);
   }
 }
 

@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../providers/music_provider.dart";
+import "../widgets/song_menu_tile.dart";
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
@@ -160,11 +161,7 @@ class LibraryScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Icon(
-                                Icons.more_horiz_rounded,
-                                color: Colors.grey[600],
-                                size: 20,
-                              ),
+                              SongMenuTile(song: song),
                             ],
                           ),
                         ),
