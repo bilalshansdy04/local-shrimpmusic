@@ -10,8 +10,8 @@ import "dart:isolate";
 import "package:path_provider/path_provider.dart";
 import "package:audio_metadata_reader/audio_metadata_reader.dart";
 import "package:shared_preferences/shared_preferences.dart";
-import '../models/playlist.dart';
 
+import '../models/playlist.dart';
 
 final artworkProvider = FutureProvider.family<File?, String>((
   ref,
@@ -78,6 +78,8 @@ class MusicState {
 
   // New playlist state
   final List<Playlist> playlists;
+  // Source queue when shuffle is enabled, to restore when disabled
+  final List<SongModel>? shuffleSource;
 
   MusicState({
     this.allSongs = const [],
@@ -97,8 +99,8 @@ class MusicState {
     this.recentlyPlayed = const [],
     this.favoriteSongs = const [],
     this.playlists = const [],
+    this.shuffleSource,
   });
-
 
   MusicState copyWith({
     List<SongModel>? allSongs,
@@ -118,6 +120,8 @@ class MusicState {
     List<SongModel>? recentlyPlayed,
     List<SongModel>? favoriteSongs,
     List<Playlist>? playlists,
+    List<SongModel>? shuffleSource,
+    bool clearShuffleSource = false,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -137,6 +141,9 @@ class MusicState {
       recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
       favoriteSongs: favoriteSongs ?? this.favoriteSongs,
       playlists: playlists ?? this.playlists,
+      shuffleSource: clearShuffleSource
+          ? null
+          : (shuffleSource ?? this.shuffleSource),
     );
   }
 }
@@ -187,7 +194,7 @@ class MusicNotifier extends Notifier<MusicState> {
     });
 
     _init();
-    return MusicState();
+    return MusicState(shuffleSource: null);
   }
 
   Future<void> _init() async {
@@ -319,7 +326,9 @@ class MusicNotifier extends Notifier<MusicState> {
       if (playlistsJson != null) {
         try {
           final List<dynamic> playlistsList = jsonDecode(playlistsJson);
-          final playlists = playlistsList.map((p) => Playlist.fromJson(p)).toList();
+          final playlists = playlistsList
+              .map((p) => Playlist.fromJson(p))
+              .toList();
           state = state.copyWith(playlists: playlists);
         } catch (e) {}
       }
@@ -539,21 +548,29 @@ class MusicNotifier extends Notifier<MusicState> {
 
     List<SongModel> newQueue;
     int newIndex;
+    List<SongModel>? newShuffleSource;
 
     if (newShuffle) {
-      newQueue = List.from(state.allSongs)..shuffle();
+      // Save original queue, then shuffle it keeping current song at front
+      newShuffleSource = List.from(state.queue);
+      newQueue = List.from(state.queue)..shuffle();
       newQueue.removeWhere((s) => s.id == state.currentSong!.id);
       newQueue.insert(0, state.currentSong!);
       newIndex = 0;
     } else {
-      newQueue = state.allSongs;
+      // Restore the original queue order that was active before shuffle
+      newQueue = state.shuffleSource ?? state.allSongs;
       newIndex = newQueue.indexWhere((s) => s.id == state.currentSong!.id);
+      if (newIndex == -1) newIndex = 0;
+      newShuffleSource = null;
     }
 
     state = state.copyWith(
       isShuffle: newShuffle,
       queue: newQueue,
       queueIndex: newIndex,
+      shuffleSource: newShuffleSource,
+      clearShuffleSource: !newShuffle,
     );
   }
 
@@ -627,7 +644,9 @@ class MusicNotifier extends Notifier<MusicState> {
   }
 
   Future<void> deletePlaylist(String playlistId) async {
-    final newPlaylists = state.playlists.where((pl) => pl.id != playlistId).toList();
+    final newPlaylists = state.playlists
+        .where((pl) => pl.id != playlistId)
+        .toList();
     state = state.copyWith(playlists: newPlaylists);
     await _savePlaylists(newPlaylists);
   }
@@ -655,7 +674,10 @@ class MusicNotifier extends Notifier<MusicState> {
 
     // Insert after currently playing song for "play next" feel
     final insertIndex = state.queueIndex + 1;
-    newQueue.insert(insertIndex < newQueue.length ? insertIndex : newQueue.length, song);
+    newQueue.insert(
+      insertIndex < newQueue.length ? insertIndex : newQueue.length,
+      song,
+    );
 
     state = state.copyWith(queue: newQueue);
   }
