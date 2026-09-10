@@ -71,8 +71,6 @@ class LyricNotifier extends Notifier<LyricState> {
       final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
 
       final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
-      print("Looking for LRC file at: ${lrcFile.path}");
-
       if (await lrcFile.exists()) {
         final content = await lrcFile.readAsString();
         final parsed = _parseLrc(content);
@@ -107,9 +105,7 @@ class LyricNotifier extends Notifier<LyricState> {
             return;
           }
         }
-      } catch (e) {
-        print('Error reading embedded lyrics: $e');
-      }
+      } catch (_) {}
 
       state = LyricState(lyrics: null); // Not found locally or embedded
     } catch (e) {
@@ -155,7 +151,7 @@ class LyricNotifier extends Notifier<LyricState> {
         return data.cast<Map<String, dynamic>>();
       }
     } catch (e) {
-      print('Error searching lyrics: $e');
+      state = state.copyWith(error: e.toString());
     } finally {
       state = state.copyWith(isSearching: false);
     }
@@ -171,7 +167,6 @@ class LyricNotifier extends Notifier<LyricState> {
       final name = lastDot != -1 ? basename.substring(0, lastDot) : basename;
 
       final lrcFile = File('$dir${Platform.pathSeparator}$name.lrc');
-      print("Looking for LRC file at: ${lrcFile.path}");
       await lrcFile.writeAsString(syncedLyrics);
 
       final parsed = _parseLrc(syncedLyrics);

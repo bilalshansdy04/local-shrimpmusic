@@ -2,7 +2,7 @@ name: local
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -31,22 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.9
-  google_fonts: ^8.2.1
   flutter_riverpod: ^3.4.3
   media_kit: ^1.2.6
-  media_kit_video: ^2.0.1
-  media_kit_libs_video: ^1.0.7
   on_audio_query: ^2.9.0
-  flutter_lyric: ^3.0.7
-  kuroshiro: ^1.0.5
-  korean_romanization_converter: ^0.0.1
-  dio: ^5.11.1
-  sqflite: ^2.4.3
   path_provider: ^2.1.6
-  permission_handler: ^13.0.2
   file_picker: ^12.2.0
   shared_preferences: ^2.5.5
   audio_metadata_reader: ^1.7.1
@@ -69,7 +57,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

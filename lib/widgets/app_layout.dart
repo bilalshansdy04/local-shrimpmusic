@@ -13,6 +13,7 @@ import "../screens/playlists_screen.dart";
 import "../screens/settings_screen.dart";
 import "../providers/music_provider.dart";
 import "../providers/ui_provider.dart";
+import "../utils/format.dart";
 
 class AppLayout extends ConsumerStatefulWidget {
   const AppLayout({super.key});
@@ -683,19 +684,13 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
             Consumer(
               builder: (context, ref, _) {
                 final musicState = ref.watch(musicProvider);
-                String formatDuration(Duration d) {
-                  final mins = d.inMinutes;
-                  final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
-                  return "$mins:$secs";
-                }
-
                 final pos = musicState.position;
                 final dur = musicState.duration;
 
                 return Row(
                   children: [
                     Text(
-                      formatDuration(
+                      formatDurationMs(
                         _dragPosition != null
                             ? Duration(milliseconds: _dragPosition!.toInt())
                             : pos,
@@ -762,7 +757,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      formatDuration(dur),
+                      formatDurationMs(dur),
                       style: TextStyle(
                         color: Colors.grey[800],
                         fontSize: 13,

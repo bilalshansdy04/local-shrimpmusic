@@ -31,7 +31,7 @@ final artworkProvider = FutureProvider.family<File?, String>((
         if (metadata.pictures.isNotEmpty) {
           return metadata.pictures.first.bytes;
         }
-      } catch (e) {}
+      } catch (_) {}
       return null;
     });
 
@@ -39,21 +39,8 @@ final artworkProvider = FutureProvider.family<File?, String>((
       await cacheFile.writeAsBytes(bytes);
       return cacheFile;
     }
-  } catch (e) {}
+  } catch (_) {}
   return null;
-});
-
-final audioBitrateProvider = FutureProvider.family<int?, String>((
-  ref,
-  filePath,
-) async {
-  return await Isolate.run(() {
-    try {
-      final metadata = readMetadata(File(filePath), getImage: false);
-      return metadata.bitrate;
-    } catch (e) {}
-    return null;
-  });
 });
 
 enum LoopMode { off, all, one }
@@ -120,8 +107,7 @@ class MusicState {
     List<SongModel>? recentlyPlayed,
     List<SongModel>? favoriteSongs,
     List<Playlist>? playlists,
-    List<SongModel>? shuffleSource,
-    bool clearShuffleSource = false,
+    Object? shuffleSource = _sentinel,
   }) {
     return MusicState(
       allSongs: allSongs ?? this.allSongs,
@@ -141,12 +127,15 @@ class MusicState {
       recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
       favoriteSongs: favoriteSongs ?? this.favoriteSongs,
       playlists: playlists ?? this.playlists,
-      shuffleSource: clearShuffleSource
-          ? null
-          : (shuffleSource ?? this.shuffleSource),
+      shuffleSource:
+          shuffleSource == _sentinel
+              ? this.shuffleSource
+              : shuffleSource as List<SongModel>?,
     );
   }
 }
+
+const _sentinel = Object();
 
 class MusicNotifier extends Notifier<MusicState> {
   final OnAudioQuery _audioQuery = OnAudioQuery();
@@ -236,7 +225,7 @@ class MusicNotifier extends Notifier<MusicState> {
                   }
                 }
               }
-            } catch (e) {}
+            } catch (_) {}
 
             final songMaps = await Isolate.run(() {
               final results = <Map<String, dynamic>>[];
@@ -264,8 +253,7 @@ class MusicNotifier extends Notifier<MusicState> {
                   if (metadata.duration != null) {
                     durationMs = metadata.duration!.inMilliseconds;
                   }
-                  print('Read bitrate for $title: ${metadata.bitrate}');
-                } catch (e) {}
+                } catch (_) {}
 
                 results.add({
                   '_id': path.hashCode,
@@ -318,7 +306,7 @@ class MusicNotifier extends Notifier<MusicState> {
               .where((s) => favoriteSet.contains(s.id.toString()))
               .toList();
           state = state.copyWith(favoriteSongs: favoriteSongs);
-        } catch (e) {}
+        } catch (_) {}
       }
 
       // Load playlists from prefs
@@ -330,7 +318,20 @@ class MusicNotifier extends Notifier<MusicState> {
               .map((p) => Playlist.fromJson(p))
               .toList();
           state = state.copyWith(playlists: playlists);
-        } catch (e) {}
+        } catch (_) {}
+      }
+
+      // Load recently played from prefs
+      final recentlyPlayedIdsJson = prefs.getString('recently_played_ids');
+      if (recentlyPlayedIdsJson != null) {
+        try {
+          final List<dynamic> ids = jsonDecode(recentlyPlayedIdsJson);
+          final idSet = ids.map((id) => id.toString()).toSet();
+          final recentlyPlayed = songs
+              .where((s) => idSet.contains(s.id.toString()))
+              .toList();
+          state = state.copyWith(recentlyPlayed: recentlyPlayed);
+        } catch (_) {}
       }
     } else {
       state = state.copyWith(hasPermission: false, isLoading: false);
@@ -481,8 +482,9 @@ class MusicNotifier extends Notifier<MusicState> {
 
   void removeFromQueue(int index) {
     if (index < 0 || index >= state.queue.length) return;
-    if (index == state.queueIndex)
+    if (index == state.queueIndex) {
       return; // Cannot remove currently playing song via swipe
+    }
 
     final List<SongModel> newQueue = List.from(state.queue);
     newQueue.removeAt(index);
@@ -499,8 +501,9 @@ class MusicNotifier extends Notifier<MusicState> {
     if (oldIndex < 0 ||
         oldIndex >= state.queue.length ||
         newIndex < 0 ||
-        newIndex > state.queue.length)
+        newIndex > state.queue.length) {
       return;
+    }
 
     if (oldIndex < newIndex) {
       newIndex -= 1;
@@ -570,7 +573,6 @@ class MusicNotifier extends Notifier<MusicState> {
       queue: newQueue,
       queueIndex: newIndex,
       shuffleSource: newShuffleSource,
-      clearShuffleSource: !newShuffle,
     );
   }
 

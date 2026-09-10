@@ -79,6 +79,7 @@ class QueuePaneView extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             buildDefaultDragHandles: false,
             itemCount: queue.length - queueIndex - 1,
+            // ignore: deprecated_member_use
             onReorder: (oldIndex, newIndex) {
               final absoluteOld = queueIndex + 1 + oldIndex;
               final absoluteNew = queueIndex + 1 + newIndex;

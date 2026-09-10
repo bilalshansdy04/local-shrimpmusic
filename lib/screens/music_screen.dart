@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../providers/music_provider.dart';
 import '../providers/ui_provider.dart';
+import '../utils/format.dart';
 import '../widgets/lyric_pane_view.dart';
 import '../widgets/queue_pane_view.dart';
 
@@ -15,12 +15,6 @@ class MusicScreen extends ConsumerStatefulWidget {
 
 class _MusicScreenState extends ConsumerState<MusicScreen> {
   double? _dragPosition;
-
-  String formatDuration(Duration d) {
-    String minutes = (d.inMinutes % 60).toString().padLeft(2, "0");
-    String seconds = (d.inSeconds % 60).toString().padLeft(2, "0");
-    return "$minutes:$seconds";
-  }
 
   Widget _buildIconWithDot({
     required IconData icon,
@@ -112,11 +106,12 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                                     );
                                     return art.when(
                                       data: (bytes) {
-                                        if (bytes != null)
+                                        if (bytes != null) {
                                           return Image.file(
                                             bytes,
                                             fit: BoxFit.cover,
                                           );
+                                        }
                                         return Container(
                                           color: Colors.grey[300],
                                           child: const Center(
@@ -169,7 +164,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                       Row(
                         children: [
                           Text(
-                            formatDuration(
+                            formatDurationMs(
                               _dragPosition != null
                                   ? Duration(
                                       milliseconds: _dragPosition!.toInt(),
@@ -226,7 +221,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> {
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            formatDuration(musicState.duration),
+                            formatDurationMs(musicState.duration),
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

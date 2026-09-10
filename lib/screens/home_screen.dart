@@ -3,7 +3,6 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
 
 import "../providers/music_provider.dart";
-import "../providers/ui_provider.dart";
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

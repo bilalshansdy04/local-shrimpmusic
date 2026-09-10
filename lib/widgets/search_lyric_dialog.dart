@@ -5,7 +5,7 @@ import '../providers/lyric_provider.dart';
 
 class SearchLyricDialog extends ConsumerStatefulWidget {
   final SongModel song;
-  const SearchLyricDialog({required this.song});
+  const SearchLyricDialog({super.key, required this.song});
 
   @override
   ConsumerState<SearchLyricDialog> createState() => SearchLyricDialogState();
@@ -67,7 +67,7 @@ class SearchLyricDialogState extends ConsumerState<SearchLyricDialog> {
                   return ListTile(
                     title: Text(result['trackName'] ?? 'Unknown'),
                     subtitle: Text(
-                      "${result['artistName']} - ${result['albumName']}\n${hasSynced ? "✅ Synced Lyrics Available" : "❌ Plain Lyrics Only"}",
+                      "${result['artistName']} - ${result['albumName']}\n${hasSynced ? "Synced Lyrics Available" : "Plain Lyrics Only"}",
                     ),
                     isThreeLine: true,
                     onTap: () {
