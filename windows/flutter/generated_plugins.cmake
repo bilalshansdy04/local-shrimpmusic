@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audiotags
   media_kit_libs_windows_audio
-  media_kit_libs_windows_video
   screen_retriever_windows
   window_manager
 )
