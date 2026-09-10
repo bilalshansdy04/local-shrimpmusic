@@ -50,6 +50,7 @@ dependencies:
   http: ^1.6.0
   audiotags: ^1.4.5
   media_kit_libs_windows_video: ^1.0.11
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

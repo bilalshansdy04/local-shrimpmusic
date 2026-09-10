@@ -1,11 +1,17 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:media_kit/media_kit.dart";
+import "package:window_manager/window_manager.dart";
 import "widgets/app_layout.dart";
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await windowManager.ensureInitialized();
+  await windowManager.waitUntilReadyToShow(
+    const WindowOptions(size: Size(1280, 720), center: true, titleBarStyle: TitleBarStyle.hidden),
+    () async { await windowManager.show(); await windowManager.focus(); },
+  );
   runApp(const ProviderScope(child: ShrimpMusic()));
 }
 

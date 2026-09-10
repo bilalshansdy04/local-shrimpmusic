@@ -3,6 +3,7 @@ import 'queue_pane_view.dart';
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:on_audio_query/on_audio_query.dart";
+import "package:window_manager/window_manager.dart";
 
 import "../screens/home_screen.dart";
 import "../screens/music_screen.dart";
@@ -71,12 +72,35 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
 
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 150.0,
-                    ), // Always reserve space for player
-                    child: viewMode == PlayerViewMode.lyric && displaySong != null
-                        ? LyricPaneView(song: displaySong)
-                        : _screens[_selectedIndex],
+                    padding: EdgeInsets.only(
+                      top: 56, // custom title bar height
+                      bottom: 150.0 + 24, // player dock + bottom spacing
+                    ),
+                    child: isDesktop
+                        ? Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFCFBFC),
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFDC5028)
+                                      .withValues(alpha: 0.05),
+                                  blurRadius: 35,
+                                  offset: const Offset(0, 12),
+                                  spreadRadius: -4,
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: viewMode == PlayerViewMode.lyric &&
+                                    displaySong != null
+                                ? LyricPaneView(song: displaySong)
+                                : _screens[_selectedIndex],
+                          )
+                        : viewMode == PlayerViewMode.lyric &&
+                                displaySong != null
+                            ? LyricPaneView(song: displaySong)
+                            : _screens[_selectedIndex],
                   ),
                 ),
 
@@ -96,7 +120,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           if (isDesktop)
             Positioned(
               left: 24,
-              top: 24,
+              top: 56,
               bottom: 120 + 32, // Always leave space for player dock
               child: _buildFloatingSidebar(),
             ),
@@ -105,7 +129,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
           if (isDesktop)
             Positioned(
               right: 24,
-              top: 24,
+              top: 56,
               bottom: 120 + 32, // Always leave space for player dock
               child: viewMode == PlayerViewMode.closed
                   ? _buildRightPaneClosed()
@@ -124,6 +148,33 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
               isDesktop,
             ),
           ),
+
+          // Custom title bar
+          // ponytail: ikon statis, tambah WindowListener kalau butuh ikon maximize/restore dinamis.
+          if (isDesktop)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 40,
+              child: Row(
+                children: [
+                  Expanded(child: DragToMoveArea(child: Container(color: Colors.transparent))),
+                  IconButton(onPressed: () => windowManager.minimize(), icon: const Icon(Icons.remove, size: 18)),
+                  IconButton(
+                    onPressed: () async {
+                      if (await windowManager.isMaximized()) {
+                        await windowManager.unmaximize();
+                      } else {
+                        await windowManager.maximize();
+                      }
+                    },
+                    icon: const Icon(Icons.crop_square, size: 16),
+                  ),
+                  IconButton(onPressed: () => windowManager.close(), icon: const Icon(Icons.close, size: 18)),
+                ],
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: isDesktop
