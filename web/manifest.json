@@ -1,6 +1,6 @@
 {
-    "name": "local",
-    "short_name": "local",
+    "name": "ShrimpMusic",
+    "short_name": "ShrimpMusic",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

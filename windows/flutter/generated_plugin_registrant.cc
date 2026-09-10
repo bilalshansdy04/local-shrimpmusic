@@ -7,8 +7,14 @@
 #include "generated_plugin_registrant.h"
 
 #include <audiotags/audiotags_plugin_c_api.h>
+#include <media_kit_libs_windows_audio/media_kit_libs_windows_audio_plugin_c_api.h>
+#include <media_kit_libs_windows_video/media_kit_libs_windows_video_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AudiotagsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("AudiotagsPluginCApi"));
+  MediaKitLibsWindowsAudioPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("MediaKitLibsWindowsAudioPluginCApi"));
+  MediaKitLibsWindowsVideoPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("MediaKitLibsWindowsVideoPluginCApi"));
 }

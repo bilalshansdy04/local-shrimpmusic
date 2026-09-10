@@ -6,16 +6,16 @@ import "widgets/app_layout.dart";
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
-  runApp(const ProviderScope(child: ShrimpLocalApp()));
+  runApp(const ProviderScope(child: ShrimpMusic()));
 }
 
-class ShrimpLocalApp extends StatelessWidget {
-  const ShrimpLocalApp({super.key});
+class ShrimpMusic extends StatelessWidget {
+  const ShrimpMusic({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Shrimp Local",
+      title: "ShrimpMusic",
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFFCFBFC),
