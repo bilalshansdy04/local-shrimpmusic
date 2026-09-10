@@ -223,7 +223,7 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
       child: Column(
         children: [
           const SizedBox(height: 28),
-          const Icon(Icons.menu_rounded, color: Color(0xFFFF4500), size: 32),
+          // const Icon(Icons.menu_rounded, color: Color(0xFFFF4500), size: 32),
           const SizedBox(height: 32),
           _sidebarItem(Icons.search_rounded, 1),
           const SizedBox(height: 16),
